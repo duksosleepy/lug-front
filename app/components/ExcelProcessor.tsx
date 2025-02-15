@@ -10,20 +10,23 @@ const ExcelProcessor = () => {
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [resultFileUrl, setResultFileUrl] = useState<string | null>(null);
+  const [mode, setMode] = useState<'online' | 'offline'>('online');
   const { toast } = useToast();
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = event.target.files?.[0];
     if (selectedFile) {
-      if (selectedFile.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
-          selectedFile.type === 'application/vnd.ms-excel' ||
-          selectedFile.type === 'text/csv') {
+      // Chỉ cho phép Excel, không cho phép CSV
+      if (
+        selectedFile.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+        selectedFile.type === 'application/vnd.ms-excel'
+      ) {
         setFile(selectedFile);
         setResultFileUrl(null);
       } else {
         toast({
           title: "Invalid file type",
-          description: "Please upload an Excel or CSV file",
+          description: "Please upload an Excel file (.xlsx or .xls)",
           variant: "destructive",
         });
       }
@@ -34,15 +37,16 @@ const ExcelProcessor = () => {
     event.preventDefault();
     const droppedFile = event.dataTransfer.files[0];
     if (droppedFile) {
-      if (droppedFile.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
-          droppedFile.type === 'application/vnd.ms-excel' ||
-          droppedFile.type === 'text/csv') {
+      if (
+        droppedFile.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+        droppedFile.type === 'application/vnd.ms-excel'
+      ) {
         setFile(droppedFile);
         setResultFileUrl(null);
       } else {
         toast({
           title: "Invalid file type",
-          description: "Please upload an Excel or CSV file",
+          description: "Please upload an Excel file (.xlsx or .xls)",
           variant: "destructive",
         });
       }
@@ -61,7 +65,9 @@ const ExcelProcessor = () => {
     formData.append('file', file);
 
     try {
-      const response = await fetch('http://123.123.123.123:1234/process', {
+      // URL endpoint phụ thuộc mode được chọn
+      const endpoint = `http://localhost:8000/process/${mode}`;
+      const response = await fetch(endpoint, {
         method: 'POST',
         body: formData,
       });
@@ -79,12 +85,12 @@ const ExcelProcessor = () => {
         description: "File processed successfully",
       });
     } catch (error) {
-        toast({
-          title: "Error",
-          description: `Failed to process file: ${error instanceof Error ? error.message : "Unknown error"}`,
-          variant: "destructive",
-        });
-      } finally {
+      toast({
+        title: "Error",
+        description: `Failed to process file: ${error instanceof Error ? error.message : "Unknown error"}`,
+        variant: "destructive",
+      });
+    } finally {
       setLoading(false);
     }
   };
@@ -99,6 +105,22 @@ const ExcelProcessor = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Toggle để chọn mode online hoặc offline */}
+          <div className="flex justify-center gap-2 mb-4">
+            <Button
+              variant={mode === 'online' ? 'default' : 'outline'}
+              onClick={() => setMode('online')}
+            >
+              Online
+            </Button>
+            <Button
+              variant={mode === 'offline' ? 'default' : 'outline'}
+              onClick={() => setMode('offline')}
+            >
+              Offline
+            </Button>
+          </div>
+
           <div
             className="border-2 border-dashed border-slate-200 rounded-lg p-8 text-center hover:border-emerald-500 transition-colors"
             onDrop={handleDrop}
@@ -112,9 +134,7 @@ const ExcelProcessor = () => {
                 <p className="text-sm font-medium text-slate-700">
                   {file ? file.name : 'Drag and drop your Excel file here'}
                 </p>
-                <p className="text-sm text-slate-500">
-                  or
-                </p>
+                <p className="text-sm text-slate-500">or</p>
                 <div className="flex justify-center gap-2">
                   <Button
                     variant="outline"
@@ -127,14 +147,12 @@ const ExcelProcessor = () => {
                     id="file-upload"
                     type="file"
                     className="hidden"
-                    accept=".xlsx,.xls,.csv"
+                    accept=".xlsx,.xls"
                     onChange={handleFileChange}
                   />
                 </div>
               </div>
-              <p className="text-xs text-slate-400">
-                Supports: .xlsx, .xls, .csv
-              </p>
+              <p className="text-xs text-slate-400">Supports: .xlsx, .xls</p>
             </div>
           </div>
 
