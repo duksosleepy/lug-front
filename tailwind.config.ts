@@ -1,5 +1,5 @@
 import type { Config } from "tailwindcss"
-import colors from "tailwindcss/colors";
+import defaultColors from 'tailwindcss/colors';
 const config = {
   darkMode: ["class"],
   content: [
@@ -19,6 +19,7 @@ const config = {
     },
     extend: {
       colors: {
+        ...defaultColors,
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -74,7 +75,7 @@ const config = {
       },
     },
   },
-  plugins: [colors],
+  plugins: [],
 } satisfies Config
 
 export default config
