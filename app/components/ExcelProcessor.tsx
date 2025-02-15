@@ -66,7 +66,7 @@ const ExcelProcessor = () => {
 
     try {
       // URL endpoint phụ thuộc mode được chọn
-      const endpoint = `http://localhost:8000/process/${mode}`;
+      const endpoint = `/process/${mode}`;
       const response = await fetch(endpoint, {
         method: 'POST',
         body: formData,
