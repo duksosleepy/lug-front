@@ -77,7 +77,7 @@ const ExcelProcessor = () => {
 				toast({
 					title: "Processing Complete",
 					description: `Found ${result.invalid_count} records with invalid phone numbers. Please check the invalid records file.`,
-					variant: "warning",
+					variant: "destructive", // Updated to a valid value
 				});
 			} else {
 				toast({
