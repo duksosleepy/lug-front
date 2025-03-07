@@ -15,6 +15,10 @@ const DisProcessor = () => {
 	const [secondFile, setSecondFile] = useState<File | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [resultFileUrl, setResultFileUrl] = useState<string | null>(null);
+	const [matchStats, setMatchStats] = useState<{
+		matched: number;
+		total: number;
+	} | null>(null);
 	const { toast } = useToast();
 
 	const handleFirstFileChange = (
@@ -71,7 +75,7 @@ const DisProcessor = () => {
 
 		setLoading(true);
 		const formData = new FormData();
-		formData.append("firstFile", firstFile);
+		formData.append("firstFile", firstFile); // Thay vì "data_file"
 		formData.append("secondFile", secondFile);
 
 		try {
@@ -83,25 +87,34 @@ const DisProcessor = () => {
 			});
 
 			if (!response.ok) {
-				const errorData = await response.json();
+				const errorData = await response
+					.json()
+					.catch(() => ({ detail: "Unknown error" }));
 				throw new Error(errorData.detail || "Upload failed");
 			}
 
 			const result = await response.json();
 
 			if (result.resultFile) {
+				// Chuyển đổi base64 thành blob sử dụng Buffer như trong ExcelProcessor.tsx
 				const resultBlob = new Blob(
 					[Buffer.from(result.resultFile, "base64")],
 					{
 						type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
 					},
 				);
+
 				setResultFileUrl(URL.createObjectURL(resultBlob));
+
+				// Lưu thông tin về số lượng bản ghi đã ánh xạ
+				setMatchStats({
+					matched: result.matchedCount || 0,
+					total: result.totalCount || 0,
+				});
 
 				toast({
 					title: "Success!",
-					description:
-						"Files processed successfully. You can now download the result.",
+					description: `Files processed successfully. ${result.matchedCount || 0}/${result.totalCount || 0} records were mapped.`,
 				});
 			}
 		} catch (error) {
@@ -119,6 +132,7 @@ const DisProcessor = () => {
 		setFirstFile(null);
 		setSecondFile(null);
 		setResultFileUrl(null);
+		setMatchStats(null);
 
 		// Reset the file input elements
 		const firstInput = document.getElementById(
@@ -244,13 +258,26 @@ const DisProcessor = () => {
 						</Button>
 
 						{resultFileUrl && (
-							<Button
-								className="w-full bg-blue-600 hover:bg-blue-700 text-white"
-								onClick={() => window.open(resultFileUrl)}
-							>
-								<Download className="w-4 h-4 mr-2" />
-								Download Result File
-							</Button>
+							<>
+								<Button
+									className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+									onClick={() => window.open(resultFileUrl)}
+								>
+									<Download className="w-4 h-4 mr-2" />
+									Download Result File
+								</Button>
+
+								{matchStats && (
+									<div className="text-center text-sm text-slate-600 mt-2">
+										Mapped {matchStats.matched} of {matchStats.total} records (
+										{(
+											(matchStats.matched / Math.max(matchStats.total, 1)) *
+											100
+										).toFixed(1)}
+										%)
+									</div>
+								)}
+							</>
 						)}
 
 						<Button
