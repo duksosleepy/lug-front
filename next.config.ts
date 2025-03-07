@@ -13,7 +13,7 @@ const nextConfig: NextConfig = {
 			},
 			{
 				source: "/process-dual-files",
-				destination: "http://localhost:8000/process-dual-files",
+				destination: "http://localhost:8000/process/mapping",
 			},
 		];
 	},
