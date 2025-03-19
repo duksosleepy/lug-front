@@ -15,6 +15,10 @@ const nextConfig: NextConfig = {
 				source: "/process-dual-files",
 				destination: "http://localhost:8000/process/mapping",
 			},
+			{
+				source: "/api/warranty",
+				destination: "http://localhost:8000/warranty",
+			},
 		];
 	},
 	experimental: {
