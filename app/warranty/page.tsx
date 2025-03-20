@@ -2,7 +2,7 @@ import WarrantyForm from "@/app/components/WarrantyForm";
 import { Toaster } from "@/app/components/ui/toaster";
 
 export const metadata = {
-	title: "Warranty Registration",
+	title: "Đăng kí bảo hành",
 	description: "Register your product warranty",
 };
 

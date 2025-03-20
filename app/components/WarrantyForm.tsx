@@ -1,9 +1,10 @@
 "use client";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { PhoneInput } from "react-international-phone";
 import "react-international-phone/style.css";
 import { PhoneNumberUtil } from "google-libphonenumber";
 import ReCAPTCHA from "react-google-recaptcha";
+import Image from "next/image";
 import {
 	Card,
 	CardContent,
@@ -23,6 +24,13 @@ interface FormData {
 	order_code: string;
 }
 
+// Phone input data interface
+interface PhoneInputData {
+	country?: {
+		iso2?: string;
+	};
+}
+
 // Step type for the carousel
 interface Step {
 	title: string;
@@ -34,64 +42,64 @@ interface Step {
 // Mock data for the carousel steps
 const shopeeSteps: Step[] = [
 	{
-		title: "Step 1",
-		description: "Open the Shopee app and go to your orders",
+		title: "Bước 1",
+		description: "Mở ứng dụng Shopee và đi đến đơn hàng của bạn",
 		imagePath: "/api/placeholder/400/300",
 	},
 	{
-		title: "Step 2",
-		description: "Find the order you want to register for warranty",
+		title: "Bước 2",
+		description: "Tìm đơn hàng bạn muốn đăng ký bảo hành",
 		imagePath: "/api/placeholder/400/300",
 	},
 	{
-		title: "Step 3",
-		description: "Tap on the order to view details",
+		title: "Bước 3",
+		description: "Chạm vào đơn hàng để xem chi tiết",
 		imagePath: "/api/placeholder/400/300",
 	},
 	{
-		title: "Step 4",
-		description: "The order code is displayed at the top of the order details",
+		title: "Bước 4",
+		description: "Mã đơn hàng hiển thị ở phần đầu của chi tiết đơn hàng",
 		imagePath: "/api/placeholder/400/300",
 	},
 ];
 
 const tiktokSteps: Step[] = [
 	{
-		title: "Step 1",
-		description: "Open TikTok Shop and navigate to your orders",
+		title: "Bước 1",
+		description: "Mở TikTok Shop và điều hướng đến đơn hàng của bạn",
 		imagePath: "/api/placeholder/400/300",
 	},
 	{
-		title: "Step 2",
-		description: "Select the order you need the code for",
+		title: "Bước 2",
+		description: "Chọn đơn hàng bạn cần lấy mã",
 		imagePath: "/api/placeholder/400/300",
 	},
 	{
-		title: "Step 3",
-		description: "The order code is listed in the order details",
+		title: "Bước 3",
+		description: "Mã đơn hàng được liệt kê trong chi tiết đơn hàng",
 		imagePath: "/api/placeholder/400/300",
 	},
 ];
 
 const lazadaSteps: Step[] = [
 	{
-		title: "Step 1",
-		description: "Log in to your Lazada account",
+		title: "Bước 1",
+		description: "Đăng nhập vào tài khoản Lazada của bạn",
 		imagePath: "/api/placeholder/400/300",
 	},
 	{
-		title: "Step 2",
-		description: "Go to 'My Orders' section",
+		title: "Bước 2",
+		description: "Đi đến phần 'Đơn hàng của tôi'",
 		imagePath: "/api/placeholder/400/300",
 	},
 	{
-		title: "Step 3",
-		description: "Find and click on the specific order",
+		title: "Bước 3",
+		description: "Tìm và nhấp vào đơn hàng cụ thể",
 		imagePath: "/api/placeholder/400/300",
 	},
 	{
-		title: "Step 4",
-		description: "Look for the order code/number in the order details page",
+		title: "Bước 4",
+		description: "Tìm mã đơn hàng trong trang chi tiết đơn hàng",
 		imagePath: "/api/placeholder/400/300",
 	},
 ];
@@ -103,6 +111,7 @@ const WarrantyForm = () => {
 		order_code: "",
 	});
 	const [loading, setLoading] = useState(false);
+	const [orderCodeError, setOrderCodeError] = useState<string | null>(null);
 	const { toast } = useToast();
 
 	// Captcha state
@@ -126,17 +135,34 @@ const WarrantyForm = () => {
 	// Country management - still needed for phone
 	const [countryIso, setCountryIso] = useState<string>("vn"); // Lowercase to match PhoneInput
 
-	// Improved phone input validation using google-libphonenumber
-	const validatePhone = (phone: string) => {
-		try {
-			return phoneUtil.isValidNumber(phoneUtil.parseAndKeepRawInput(phone));
-		} catch (error) {
-			return false;
-		}
-	};
+	// Improved phone input validation using google-libphonenumber with useCallback
+	const validatePhone = useCallback(
+		(phone: string) => {
+			// Remove non-digit characters to count only the digits.
+			const numericPhone = phone.replace(/\D/g, "");
+
+			// If too few digits are entered, skip parsing.
+			if (numericPhone.length < 5) {
+				return false;
+			}
+
+			try {
+				// Pass the region code (ensure it's uppercase)
+				const parsedNumber = phoneUtil.parseAndKeepRawInput(
+					phone,
+					countryIso.toUpperCase(),
+				);
+				return phoneUtil.isValidNumber(parsedNumber);
+			} catch (error) {
+				console.error("Phone validation error:", error);
+				return false;
+			}
+		},
+		[countryIso],
+	);
 
 	// Handle phone input changes with country code persistence
-	const handlePhoneChange = (phone: string, data: any) => {
+	const handlePhoneChange = (phone: string, data: PhoneInputData) => {
 		// Check if the phone input is empty or just contains non-digit characters
 		if (!phone || phone.replace(/\D/g, "") === "") {
 			// Reset to empty string - the defaultCountry will ensure country code is visible
@@ -146,7 +172,7 @@ const WarrantyForm = () => {
 		}
 
 		// Update country when phone country changes
-		if (data && data.country && data.country.iso2) {
+		if (data?.country?.iso2) {
 			const newCountryIso = data.country.iso2.toLowerCase(); // Ensure lowercase
 
 			// Only update if country has changed
@@ -175,7 +201,7 @@ const WarrantyForm = () => {
 
 		// Validate phone
 		setIsPhoneValid(validatePhone(phoneValue));
-	}, [phoneValue]);
+	}, [phoneValue, validatePhone]);
 
 	// Add handler for backdrop click
 	const handleBackdropClick = (e: React.MouseEvent) => {
@@ -185,8 +211,28 @@ const WarrantyForm = () => {
 		}
 	};
 
+	// Validate order code function
+	const validateOrderCode = (code: string): boolean => {
+		return code.length >= 14;
+	};
+
+	// Handle order code blur event
+	const handleOrderCodeBlur = () => {
+		if (formData.order_code && !validateOrderCode(formData.order_code)) {
+			setOrderCodeError("Bạn đã nhập sai mã đơn hàng");
+		} else {
+			setOrderCodeError(null);
+		}
+	};
+
 	const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const { name, value } = e.target;
+
+		// Reset error message if user starts typing in order_code field
+		if (name === "order_code" && orderCodeError) {
+			setOrderCodeError(null);
+		}
+
 		setFormData((prev) => ({
 			...prev,
 			[name]: value,
@@ -197,8 +243,8 @@ const WarrantyForm = () => {
 		// Basic validation
 		if (!formData.name || formData.name.length < 2) {
 			toast({
-				title: "Validation Error",
-				description: "Name should be at least 2 characters",
+				title: "Lỗi xác thực",
+				description: "Tên phải có ít nhất 2 ký tự",
 				variant: "destructive",
 			});
 			return false;
@@ -206,8 +252,8 @@ const WarrantyForm = () => {
 
 		if (!isPhoneValid) {
 			toast({
-				title: "Validation Error",
-				description: "Please enter a valid phone number",
+				title: "Lỗi xác thực",
+				description: "Vui lòng nhập số điện thoại hợp lệ",
 				variant: "destructive",
 			});
 			return false;
@@ -215,8 +261,19 @@ const WarrantyForm = () => {
 
 		if (!formData.order_code) {
 			toast({
-				title: "Validation Error",
-				description: "Order code is required",
+				title: "Lỗi xác thực",
+				description: "Mã đơn hàng là bắt buộc",
+				variant: "destructive",
+			});
+			return false;
+		}
+
+		// Check order code length
+		if (formData.order_code.length < 14) {
+			setOrderCodeError("Bạn đã nhập sai mã đơn hàng");
+			toast({
+				title: "Lỗi xác thực",
+				description: "Bạn đã nhập sai mã đơn hàng",
 				variant: "destructive",
 			});
 			return false;
@@ -224,8 +281,8 @@ const WarrantyForm = () => {
 
 		if (!captchaValue) {
 			toast({
-				title: "Validation Error",
-				description: "Please complete the captcha verification",
+				title: "Lỗi xác thực",
+				description: "Vui lòng hoàn thành xác minh captcha",
 				variant: "destructive",
 			});
 			return false;
@@ -265,23 +322,22 @@ const WarrantyForm = () => {
 			});
 
 			if (!response.ok) {
-				throw new Error("Failed to submit warranty form");
+				throw new Error("Không thể gửi biểu mẫu bảo hành");
 			}
 
-			const result = await response.json();
+			await response.json();
 
 			toast({
-				title: "Success!",
-				description:
-					"Your warranty information has been submitted successfully!",
+				title: "Thành công!",
+				description: "Thông tin bảo hành của bạn đã được gửi thành công!",
 			});
 
 			// Redirect to success page
 			window.location.href = "/warranty/success";
 		} catch (error) {
 			toast({
-				title: "Error",
-				description: `Failed to submit warranty form: ${error instanceof Error ? error.message : "Unknown error"}`,
+				title: "Lỗi",
+				description: `Không thể gửi biểu mẫu bảo hành: ${error instanceof Error ? error.message : "Lỗi không xác định"}`,
 				variant: "destructive",
 			});
 
@@ -337,163 +393,225 @@ const WarrantyForm = () => {
 	};
 
 	return (
-		<div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-			<Card className="w-full max-w-md shadow-lg">
-				<CardHeader className="space-y-1">
-					<CardTitle className="text-2xl font-bold text-center text-slate-800">
-						Warranty Registration
-					</CardTitle>
-				</CardHeader>
-				<CardContent>
-					<form onSubmit={handleSubmit} className="space-y-6">
-						{/* Name Field */}
-						<div>
-							<label
-								htmlFor="name"
-								className="block text-sm font-medium text-gray-700 mb-1 flex items-center justify-between"
-							>
-								<span>Name</span>
-								<span className="text-xs text-red-500">* required</span>
-							</label>
-							<input
-								type="text"
-								id="name"
-								name="name"
-								value={formData.name}
-								onChange={handleChange}
-								className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-								placeholder="Enter your name"
-								required
-							/>
-						</div>
-
-						{/* Phone Field */}
-						<div>
-							<label
-								htmlFor="phone"
-								className="block text-sm font-medium text-gray-700 mb-1 flex items-center justify-between"
-							>
-								<span>Phone</span>
-								<span className="text-xs text-red-500">* required</span>
-							</label>
-							<div className="phone-input-wrapper relative">
-								<PhoneInput
-									defaultCountry="vn"
-									value={phoneValue}
-									onChange={handlePhoneChange}
-									inputClassName="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-									countrySelectorStyleProps={{
-										buttonClassName:
-											"border border-gray-300 border-r-0 rounded-l-lg bg-white px-2 h-12",
-										dropdownStyleProps: {
-											className:
-												"absolute mt-1 z-10 bg-white border border-gray-300 rounded-lg shadow-lg",
-											listItemClassName:
-												"px-3 py-2 hover:bg-gray-100 cursor-pointer",
-										},
-									}}
-									forceDialCode={true}
-									disableDialCodeAndPrefix={false}
-								/>
-								<style jsx global>{`
-									/* Synchronized focus states for phone input */
-									.phone-input-wrapper {
-										position: relative;
-									}
-
-									.phone-input-wrapper .react-international-phone-input-container {
-										display: flex;
-									}
-
-									.phone-input-wrapper .react-international-phone-country-selector-button {
-										transition: all 0.2s ease-in-out;
-									}
-
-									.phone-input-wrapper .react-international-phone-input:focus + .react-international-phone-country-selector-button,
-									.phone-input-wrapper .react-international-phone-input:focus-within + .react-international-phone-country-selector-button {
-										border-color: rgb(59, 130, 246) !important;
-										box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
-									}
-
-									.phone-input-wrapper .react-international-phone-input:focus {
-										z-index: 1;
-									}
-								`}</style>
-							</div>
-							{phoneValue && !isPhoneValid && (
-								<p className="text-red-500 text-xs mt-1">
-									Please enter a valid phone number
-								</p>
-							)}
-						</div>
-
-						{/* Order Code Field */}
-						<div>
-							<div className="flex justify-between items-center mb-1">
-								<label
-									htmlFor="order_code"
-									className="block text-sm font-medium text-gray-700 flex items-center"
-								>
-									<span>Order Code</span>
-									<span className="text-xs text-red-500 ml-2">* required</span>
-								</label>
-								<div
-									className="text-sm text-blue-600 flex items-center cursor-pointer hover:underline"
-									onClick={openGuideModal}
-								>
-									<HelpCircle size={16} className="mr-1" />
-									How to find it
-								</div>
-							</div>
-							<input
-								type="text"
-								id="order_code"
-								name="order_code"
-								value={formData.order_code}
-								onChange={handleChange}
-								className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-								placeholder="Enter your order code"
-								required
-							/>
-						</div>
-
-						{/* Captcha */}
-						<div className="pt-2">
-							<label className="block text-sm font-medium text-gray-700 mb-1 flex items-center justify-between">
-								<span>Security Verification</span>
-								<span className="text-xs text-red-500">* required</span>
-							</label>
-							<div className="flex justify-center md:justify-start">
-								<ReCAPTCHA
-									ref={recaptchaRef}
-									sitekey="6LeOF6MqAAAAAHPim0XGcbswI_ZwaA5iRPRipvbb" // Replace with your actual reCAPTCHA site key
-									onChange={handleCaptchaChange}
-									className="transform scale-90 origin-left md:scale-100"
+		<div className="min-h-screen bg-gradient-to-b from-slate-100 to-blue-50 flex items-center justify-center p-4">
+			<div className="w-full max-w-4xl">
+				{/* Desktop Layout: Side by side with equal heights */}
+				<div className="flex flex-col lg:flex-row items-stretch gap-8">
+					{/* Logo and Branding Column - Modified for equal height */}
+					<div className="w-full lg:w-1/3 flex flex-col items-start justify-between bg-white/80 rounded-lg shadow-sm mb-6 lg:mb-0 p-4 lg:p-6">
+						<div className="w-full">
+							<div className="w-full flex justify-center lg:justify-start mb-6">
+								<Image
+									src="/logo.png"
+									alt="LUG.vn Logo"
+									width={160}
+									height={48}
+									className="h-auto"
+									priority
 								/>
 							</div>
-							{!captchaValue && (
-								<p className="text-xs text-gray-500 mt-1">
-									Please complete the captcha to continue
+							<div className="w-full text-gray-700">
+								<h2 className="text-2xl font-bold text-gray-800 mb-4 text-center lg:text-left">
+									Đăng Ký Bảo Hành Sản Phẩm
+								</h2>
+								<p className="mb-3 text-center lg:text-left">
+									Cảm ơn bạn đã lựa chọn sản phẩm của chúng tôi!
 								</p>
-							)}
+								<p className="mb-5 text-center lg:text-left">
+									Hãy hoàn thành mẫu đăng ký bảo hành để được hỗ trợ tốt nhất.
+								</p>
+							</div>
 						</div>
+						<div className="w-full bg-gradient-to-r from-blue-50 to-red-50 p-5 rounded-lg border border-blue-100 mt-4">
+							<h3 className="font-semibold text-red-600 mb-3 text-center lg:text-left">
+								Lợi ích khi đăng ký bảo hành:
+							</h3>
+							<ul className="list-disc list-inside space-y-2 text-sm text-gray-700">
+								<li>Bảo hành chính hãng</li>
+								<li>Hỗ trợ kỹ thuật ưu tiên</li>
+								<li>Ưu đãi đặc biệt cho khách hàng đã đăng ký</li>
+							</ul>
+						</div>
+					</div>
 
-						{/* Submit Button */}
-						<div className="pt-2">
-							<Button
-								type="submit"
-								className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg transition duration-200 ease-in-out"
-								disabled={loading || !captchaValue}
-							>
-								{loading ? "Submitting..." : "Submit"}
-							</Button>
-						</div>
-					</form>
-				</CardContent>
-			</Card>
+					{/* Form Column - Using h-full for equal height */}
+					<div className="w-full lg:w-2/3 h-full flex">
+						<Card className="w-full shadow-xl border-0 flex flex-col">
+							<CardHeader className="space-y-1 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-t-lg flex-shrink-0">
+								{/* Show this title only on mobile, on desktop it appears in the left column */}
+								<CardTitle className="text-2xl font-bold text-center lg:hidden">
+									Đăng Ký Bảo Hành
+								</CardTitle>
+								{/* On desktop, show a simpler header */}
+								<CardTitle className="text-xl font-bold text-center hidden lg:block">
+									Thông Tin Đăng Ký
+								</CardTitle>
+							</CardHeader>
+							<CardContent className="pt-6 flex-grow">
+								<form onSubmit={handleSubmit} className="space-y-6">
+									{/* Name Field */}
+									<div>
+										<label
+											htmlFor="name"
+											className="flex items-center justify-between text-sm font-medium text-gray-700 mb-1"
+										>
+											<span>Họ và tên</span>
+										</label>
+										<input
+											type="text"
+											id="name"
+											name="name"
+											value={formData.name}
+											onChange={handleChange}
+											className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+											placeholder="Nhập họ và tên của bạn"
+											required
+										/>
+									</div>
+
+									{/* Phone Field */}
+									<div>
+										<label
+											htmlFor="phone"
+											className="flex items-center justify-between text-sm font-medium text-gray-700 mb-1"
+										>
+											<span>Số điện thoại</span>
+										</label>
+										<div className="phone-input-wrapper relative">
+											<PhoneInput
+												defaultCountry="vn"
+												value={phoneValue}
+												onChange={handlePhoneChange}
+												inputClassName="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+												countrySelectorStyleProps={{
+													buttonClassName:
+														"border border-gray-300 border-r-0 rounded-l-lg bg-white px-2 h-12",
+													dropdownStyleProps: {
+														className:
+															"absolute mt-1 z-10 bg-white border border-gray-300 rounded-lg shadow-lg",
+														listItemClassName:
+															"px-3 py-2 hover:bg-gray-100 cursor-pointer",
+													},
+												}}
+												forceDialCode={true}
+												disableDialCodeAndPrefix={false}
+											/>
+											<style jsx global>{`
+												/* Synchronized focus states for phone input */
+												.phone-input-wrapper {
+													position: relative;
+												}
+
+												.phone-input-wrapper .react-international-phone-input-container {
+													display: flex;
+												}
+
+												.phone-input-wrapper .react-international-phone-country-selector-button {
+													transition: all 0.2s ease-in-out;
+												}
+
+												.phone-input-wrapper .react-international-phone-input:focus + .react-international-phone-country-selector-button,
+												.phone-input-wrapper .react-international-phone-input:focus-within + .react-international-phone-country-selector-button {
+													border-color: rgb(239, 68, 68) !important;
+													box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.3);
+												}
+
+												.phone-input-wrapper .react-international-phone-input:focus {
+													z-index: 1;
+												}
+											`}</style>
+										</div>
+										{phoneValue && !isPhoneValid && (
+											<p className="text-red-500 text-xs mt-1">
+												Vui lòng nhập số điện thoại hợp lệ
+											</p>
+										)}
+									</div>
+
+									{/* Order Code Field */}
+									<div>
+										<div className="flex justify-between items-center mb-1">
+											<label
+												htmlFor="order_code"
+												className="flex items-center text-sm font-medium text-gray-700"
+											>
+												<span>Mã đơn hàng</span>
+											</label>
+											<button
+												type="button"
+												className="text-sm text-red-600 flex items-center hover:underline"
+												onClick={openGuideModal}
+											>
+												<HelpCircle size={16} className="mr-1" />
+												Cách lấy mã đơn hàng?
+											</button>
+										</div>
+										<input
+											type="text"
+											id="order_code"
+											name="order_code"
+											value={formData.order_code}
+											onChange={handleChange}
+											onBlur={handleOrderCodeBlur}
+											className={`w-full px-4 py-3 rounded-lg border ${
+												orderCodeError
+													? "border-red-500 focus:ring-red-500"
+													: "border-gray-300 focus:ring-red-500"
+											} focus:outline-none focus:ring-2 focus:border-transparent`}
+											placeholder="Nhập mã đơn hàng của bạn"
+											required
+										/>
+										{orderCodeError && (
+											<p className="text-red-500 text-xs mt-1">
+												{orderCodeError}
+											</p>
+										)}
+									</div>
+
+									{/* Captcha */}
+									<div className="pt-2">
+										<label
+											htmlFor="recaptcha"
+											className="flex items-center justify-between text-sm font-medium text-gray-700 mb-1"
+										>
+											<span>Xác minh bảo mật</span>
+										</label>
+										<div className="flex justify-center">
+											<ReCAPTCHA
+												id="recaptcha"
+												ref={recaptchaRef}
+												sitekey="6LeOF6MqAAAAAHPim0XGcbswI_ZwaA5iRPRipvbb"
+												onChange={handleCaptchaChange}
+												className="transform scale-90 md:scale-100"
+											/>
+										</div>
+										{!captchaValue && (
+											<p className="text-xs text-gray-500 mt-1 text-center">
+												Vui lòng hoàn thành xác minh để tiếp tục
+											</p>
+										)}
+									</div>
+
+									{/* Submit Button */}
+									<div className="pt-2">
+										<Button
+											type="submit"
+											className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg transition duration-200 ease-in-out"
+											disabled={loading || !captchaValue}
+										>
+											{loading ? "Đang gửi..." : "Gửi đăng ký"}
+										</Button>
+									</div>
+								</form>
+							</CardContent>
+						</Card>
+					</div>
+				</div>
+			</div>
 
 			{/* Modal for Order Code Guide */}
 			{isModalOpen && (
+				// biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
 				<div
 					className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
 					onClick={handleBackdropClick}
@@ -504,10 +622,9 @@ const WarrantyForm = () => {
 					>
 						{/* Modal Header */}
 						<div className="flex justify-between items-center p-4 border-b">
-							<h3 className="text-lg font-semibold">
-								How to Find Your Order Code
-							</h3>
+							<h3 className="text-lg font-semibold">Cách tìm mã đơn hàng</h3>
 							<button
+								type="button"
 								onClick={() => setIsModalOpen(false)}
 								className="text-gray-500 hover:text-gray-700"
 							>
@@ -518,9 +635,10 @@ const WarrantyForm = () => {
 						{/* Tab Navigation */}
 						<div className="flex justify-center border-b">
 							<button
+								type="button"
 								className={`px-6 py-3 text-sm font-medium mx-2 ${
 									activeTab === "shopee"
-										? "border-b-2 border-blue-500 text-blue-600"
+										? "border-b-2 border-red-500 text-red-600"
 										: "text-gray-500 hover:text-gray-700"
 								}`}
 								onClick={() => handleTabChange("shopee")}
@@ -528,9 +646,10 @@ const WarrantyForm = () => {
 								Shopee
 							</button>
 							<button
+								type="button"
 								className={`px-6 py-3 text-sm font-medium mx-2 ${
 									activeTab === "tiktok"
-										? "border-b-2 border-blue-500 text-blue-600"
+										? "border-b-2 border-red-500 text-red-600"
 										: "text-gray-500 hover:text-gray-700"
 								}`}
 								onClick={() => handleTabChange("tiktok")}
@@ -538,9 +657,10 @@ const WarrantyForm = () => {
 								TikTok
 							</button>
 							<button
+								type="button"
 								className={`px-6 py-3 text-sm font-medium mx-2 ${
 									activeTab === "lazada"
-										? "border-b-2 border-blue-500 text-blue-600"
+										? "border-b-2 border-red-500 text-red-600"
 										: "text-gray-500 hover:text-gray-700"
 								}`}
 								onClick={() => handleTabChange("lazada")}
@@ -557,6 +677,7 @@ const WarrantyForm = () => {
 									<div className="flex flex-col items-center justify-center">
 										{/* Navigation Buttons (now positioned on the sides of the image) */}
 										<button
+											type="button"
 											onClick={goToPrevSlide}
 											className="absolute left-2 top-1/2 transform -translate-y-1/2 p-2 rounded-full bg-gray-200 bg-opacity-70 hover:bg-gray-300 z-10"
 											aria-label="Previous slide"
@@ -564,13 +685,16 @@ const WarrantyForm = () => {
 											<ChevronLeft size={20} />
 										</button>
 
-										<img
+										<Image
 											src={getCurrentSteps()[currentStep].imagePath}
 											alt={getCurrentSteps()[currentStep].title}
+											width={400}
+											height={300}
 											className="w-full h-64 object-contain mb-4"
 										/>
 
 										<button
+											type="button"
 											onClick={goToNextSlide}
 											className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 rounded-full bg-gray-200 bg-opacity-70 hover:bg-gray-300 z-10"
 											aria-label="Next slide"
@@ -589,13 +713,13 @@ const WarrantyForm = () => {
 
 								{/* Indicator Dots */}
 								<div className="flex justify-center mt-4">
-									{getCurrentSteps().map((_, index) => (
+									{getCurrentSteps().map((step, index) => (
 										<div
-											key={index}
+											key={`${activeTab}-${step.title}-${index}`}
 											className={`w-2 h-2 mx-1 rounded-full ${
-												currentStep === index ? "bg-blue-500" : "bg-gray-300"
+												currentStep === index ? "bg-red-500" : "bg-gray-300"
 											}`}
-										></div>
+										/>
 									))}
 								</div>
 							</div>
