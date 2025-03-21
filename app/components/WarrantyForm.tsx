@@ -580,7 +580,7 @@ const WarrantyForm = () => {
 											<ReCAPTCHA
 												id="recaptcha"
 												ref={recaptchaRef}
-												sitekey="6LeOF6MqAAAAAHPim0XGcbswI_ZwaA5iRPRipvbb"
+												sitekey="6LcxZPsqAAAAAAyySBd1W6bq1Ue3uxKmV_iM23HH"
 												onChange={handleCaptchaChange}
 												className="transform scale-90 md:scale-100"
 											/>
