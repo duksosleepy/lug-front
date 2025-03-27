@@ -3,16 +3,17 @@ import { useState, useRef, useEffect } from "react";
 import { useToast } from "@/app/components/ui/use-toast";
 import { Toaster } from "@/app/components/ui/toaster";
 import { Calendar, ChevronLeft, ChevronRight } from "lucide-react";
-import { format, parse, isValid } from "date-fns";
+import { format, isValid } from "date-fns";
 
 export default function SapoSyncPage() {
 	const { toast } = useToast();
 	const [loading, setLoading] = useState(false);
 
 	// Format dates for display
-	const formatDisplayDate = (dateString) => {
+	const formatDisplayDate = (dateInput: string | Date): string => {
 		try {
-			const date = new Date(dateString);
+			const date =
+				typeof dateInput === "string" ? new Date(dateInput) : dateInput;
 			return isValid(date) ? format(date, "MM/dd/yyyy") : "";
 		} catch {
 			return "";
@@ -28,7 +29,7 @@ export default function SapoSyncPage() {
 		formatDisplayDate("2025-01-01"),
 	);
 	const [endDateDisplay, setEndDateDisplay] = useState(
-		formatDisplayDate(new Date()),
+		formatDisplayDate(new Date()), // Now works correctly with Date object
 	);
 
 	// Calendar popup state
@@ -38,27 +39,27 @@ export default function SapoSyncPage() {
 	const [endCalendarMonth, setEndCalendarMonth] = useState(new Date());
 
 	// Refs for outside click detection
-	const startCalendarRef = useRef(null);
-	const endCalendarRef = useRef(null);
-	const startInputRef = useRef(null);
-	const endInputRef = useRef(null);
+	const startCalendarRef = useRef<HTMLDivElement>(null);
+	const endCalendarRef = useRef<HTMLDivElement>(null);
+	const startInputRef = useRef<HTMLDivElement>(null);
+	const endInputRef = useRef<HTMLDivElement>(null);
 
 	// Handle outside clicks to close calendar
 	useEffect(() => {
-		function handleClickOutside(event) {
+		function handleClickOutside(event: MouseEvent) {
 			if (
 				showStartCalendar &&
 				startCalendarRef.current &&
-				!startCalendarRef.current.contains(event.target) &&
-				!startInputRef.current.contains(event.target)
+				!startCalendarRef.current.contains(event.target as Node) &&
+				!startInputRef.current?.contains(event.target as Node)
 			) {
 				setShowStartCalendar(false);
 			}
 			if (
 				showEndCalendar &&
 				endCalendarRef.current &&
-				!endCalendarRef.current.contains(event.target) &&
-				!endInputRef.current.contains(event.target)
+				!endCalendarRef.current.contains(event.target as Node) &&
+				!endInputRef.current?.contains(event.target as Node)
 			) {
 				setShowEndCalendar(false);
 			}
@@ -69,9 +70,14 @@ export default function SapoSyncPage() {
 			document.removeEventListener("mousedown", handleClickOutside);
 		};
 	}, [showStartCalendar, showEndCalendar]);
-
+	interface CalendarDay {
+		date: Date;
+		day: number;
+		isCurrentMonth: boolean;
+		isToday: boolean;
+	}
 	// Generate calendar days
-	const generateCalendarDays = (date) => {
+	const generateCalendarDays = (date: Date): CalendarDay[] => {
 		const year = date.getFullYear();
 		const month = date.getMonth();
 
@@ -93,7 +99,7 @@ export default function SapoSyncPage() {
 		const totalDays = Math.ceil((daysFromPrevMonth + daysInMonth) / 7) * 7;
 
 		// Build array of day objects
-		const calendarDays = [];
+		const calendarDays: CalendarDay[] = [];
 
 		// Days from previous month
 		const prevMonthLastDay = new Date(year, month, 0).getDate();
@@ -171,7 +177,7 @@ export default function SapoSyncPage() {
 	};
 
 	// Select date handler
-	const selectDate = (date, isEndDate = false) => {
+	const selectDate = (date: Date, isEndDate = false): void => {
 		const formattedDate = format(date, "yyyy-MM-dd");
 		const displayDate = format(date, "MM/dd/yyyy");
 
@@ -252,6 +258,14 @@ export default function SapoSyncPage() {
 		}
 	};
 
+	interface CustomCalendarProps {
+		currentMonth: Date;
+		selectedDate: string;
+		onSelectDate: (date: Date) => void;
+		onClear: () => void;
+		calendarRef: React.Ref<HTMLDivElement>; // More general Ref type
+		isEndDate: boolean;
+	}
 	// Custom Calendar Component
 	const CustomCalendar = ({
 		currentMonth,
@@ -260,7 +274,7 @@ export default function SapoSyncPage() {
 		onClear,
 		calendarRef,
 		isEndDate,
-	}) => {
+	}: CustomCalendarProps) => {
 		const days = generateCalendarDays(currentMonth);
 		const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 

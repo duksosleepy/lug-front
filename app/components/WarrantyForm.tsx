@@ -4,7 +4,7 @@ import { PhoneInput } from "react-international-phone";
 import "react-international-phone/style.css";
 import { PhoneNumberUtil } from "google-libphonenumber";
 import ReCAPTCHA from "react-google-recaptcha";
-// Bỏ import Image vì không sử dụng
+import Image from "next/image"; // Added Next.js Image import
 import {
 	Card,
 	CardContent,
@@ -43,6 +43,13 @@ interface PhoneInputData {
 interface Step {
 	imagePath: string;
 	notes?: string; // Optional additional notes for each step
+	highlightAreas?: {
+		// Added missing highlightAreas property
+		x: number;
+		y: number;
+		width: number;
+		height: number;
+	}[];
 }
 
 // Real data for the carousel steps with actual images
@@ -481,7 +488,7 @@ const WarrantyForm = () => {
 	// Preload images for better user experience
 	const preloadImages = (steps: Step[]) => {
 		steps.forEach((step) => {
-			const img = new Image();
+			const img = new window.Image();
 			img.src = step.imagePath;
 		});
 	};
@@ -550,12 +557,14 @@ const WarrantyForm = () => {
 					<div className="w-full lg:w-1/3 flex flex-col items-start justify-between bg-white/80 rounded-lg shadow-sm mb-6 lg:mb-0 p-4 lg:p-6">
 						<div className="w-full">
 							<div className="w-full flex justify-center lg:justify-start mb-6">
-								<img
+								{/* REPLACED: img with Next.js Image component */}
+								<Image
 									src="/logo.png"
 									alt="LUG.vn Logo"
 									width={160}
 									height={48}
 									className="h-auto"
+									priority
 								/>
 							</div>
 							<div className="w-full text-gray-700">
@@ -893,17 +902,19 @@ const WarrantyForm = () => {
 										</button>
 
 										<div
-											className="cursor-zoom-in relative"
+											className="cursor-zoom-in relative w-full h-64 mb-4"
 											onClick={() =>
 												setFullscreenImage(
 													getCurrentSteps()[currentStep].imagePath,
 												)
 											}
 										>
-											<img
+											{/* REPLACED: img with Next.js Image component */}
+											<Image
 												src={getCurrentSteps()[currentStep].imagePath}
 												alt="Hướng dẫn"
-												className="w-full h-64 object-contain mb-4"
+												fill
+												className="object-contain"
 											/>
 											<div className="absolute bottom-2 right-2 bg-white bg-opacity-70 rounded-full p-1">
 												<ZoomIn size={16} className="text-gray-700" />
@@ -950,7 +961,7 @@ const WarrantyForm = () => {
 								<div className="flex justify-center mt-4">
 									{getCurrentSteps().map((step, index) => (
 										<div
-											key={`${activeTab}-${step.title}-${index}`}
+											key={index}
 											className={`w-2 h-2 mx-1 rounded-full ${
 												currentStep === index ? "bg-red-500" : "bg-gray-300"
 											}`}
@@ -970,11 +981,16 @@ const WarrantyForm = () => {
 					onClick={() => setFullscreenImage(null)}
 				>
 					<div className="relative max-w-4xl max-h-screen">
-						<img
-							src={fullscreenImage}
-							alt="Xem chi tiết hướng dẫn"
-							className="max-h-[90vh] max-w-full object-contain"
-						/>
+						{/* REPLACED: img with Next.js Image component */}
+						<div className="relative w-[800px] h-[600px]">
+							<Image
+								src={fullscreenImage}
+								alt="Xem chi tiết hướng dẫn"
+								fill
+								className="object-contain"
+								sizes="(max-width: 768px) 100vw, 80vw"
+							/>
+						</div>
 						<button
 							className="absolute top-2 right-2 bg-white rounded-full p-1"
 							onClick={(e) => {
