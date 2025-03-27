@@ -19,6 +19,10 @@ const nextConfig: NextConfig = {
 				source: "/api/warranty",
 				destination: "http://localhost:8000/warranty",
 			},
+			{
+				source: "/sapo/sync",
+				destination: "http://localhost:8000/sapo/sync",
+			},
 		];
 	},
 	experimental: {

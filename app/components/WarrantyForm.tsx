@@ -4,7 +4,7 @@ import { PhoneInput } from "react-international-phone";
 import "react-international-phone/style.css";
 import { PhoneNumberUtil } from "google-libphonenumber";
 import ReCAPTCHA from "react-google-recaptcha";
-import Image from "next/image";
+// Bỏ import Image vì không sử dụng
 import {
 	Card,
 	CardContent,
@@ -13,7 +13,14 @@ import {
 } from "@/app/components/ui/card";
 import { Button } from "@/app/components/ui/button";
 import { useToast } from "@/app/components/ui/use-toast";
-import { ChevronLeft, ChevronRight, X, HelpCircle } from "lucide-react";
+import {
+	ChevronLeft,
+	ChevronRight,
+	X,
+	HelpCircle,
+	ChevronDown,
+	ZoomIn,
+} from "lucide-react";
 
 // Initialize PhoneNumberUtil instance
 const phoneUtil = PhoneNumberUtil.getInstance();
@@ -22,6 +29,7 @@ interface FormData {
 	name: string;
 	phone: string;
 	order_code: string;
+	purchase_platform: string; // Field for purchase platform
 }
 
 // Phone input data interface
@@ -33,75 +41,62 @@ interface PhoneInputData {
 
 // Step type for the carousel
 interface Step {
-	title: string;
-	description: string;
-	// In a real app, these would be actual image paths
 	imagePath: string;
+	notes?: string; // Optional additional notes for each step
 }
 
-// Mock data for the carousel steps
+// Real data for the carousel steps with actual images
 const shopeeSteps: Step[] = [
 	{
-		title: "Bước 1",
-		description: "Mở ứng dụng Shopee và đi đến đơn hàng của bạn",
-		imagePath: "/api/placeholder/400/300",
+		imagePath: "/images/shopee/1.png",
+		notes: "Vào mục 'Tôi' > 'Đơn mua' trong ứng dụng Shopee",
 	},
 	{
-		title: "Bước 2",
-		description: "Tìm đơn hàng bạn muốn đăng ký bảo hành",
-		imagePath: "/api/placeholder/400/300",
+		imagePath: "/images/shopee/2.png",
 	},
 	{
-		title: "Bước 3",
-		description: "Chạm vào đơn hàng để xem chi tiết",
-		imagePath: "/api/placeholder/400/300",
+		imagePath: "/images/shopee/3.png",
 	},
 	{
-		title: "Bước 4",
-		description: "Mã đơn hàng hiển thị ở phần đầu của chi tiết đơn hàng",
-		imagePath: "/api/placeholder/400/300",
+		imagePath: "/images/shopee/4.png",
 	},
 ];
 
 const tiktokSteps: Step[] = [
 	{
-		title: "Bước 1",
-		description: "Mở TikTok Shop và điều hướng đến đơn hàng của bạn",
-		imagePath: "/api/placeholder/400/300",
+		imagePath: "/images/tiktok/1.png",
 	},
 	{
-		title: "Bước 2",
-		description: "Chọn đơn hàng bạn cần lấy mã",
-		imagePath: "/api/placeholder/400/300",
+		imagePath: "/images/tiktok/2.png",
 	},
 	{
-		title: "Bước 3",
-		description: "Mã đơn hàng được liệt kê trong chi tiết đơn hàng",
-		imagePath: "/api/placeholder/400/300",
+		imagePath: "/images/tiktok/3.png",
+	},
+	{
+		imagePath: "/images/tiktok/4.png",
 	},
 ];
 
 const lazadaSteps: Step[] = [
 	{
-		title: "Bước 1",
-		description: "Đăng nhập vào tài khoản Lazada của bạn",
-		imagePath: "/api/placeholder/400/300",
+		imagePath: "/images/lazada/1.png",
 	},
 	{
-		title: "Bước 2",
-		description: "Đi đến phần 'Đơn hàng của tôi'",
-		imagePath: "/api/placeholder/400/300",
+		imagePath: "/images/lazada/2.png",
 	},
 	{
-		title: "Bước 3",
-		description: "Tìm và nhấp vào đơn hàng cụ thể",
-		imagePath: "/api/placeholder/400/300",
+		imagePath: "/images/lazada/3.png",
 	},
 	{
-		title: "Bước 4",
-		description: "Tìm mã đơn hàng trong trang chi tiết đơn hàng",
-		imagePath: "/api/placeholder/400/300",
+		imagePath: "/images/lazada/4.png",
 	},
+];
+
+// Available purchase platforms
+const PURCHASE_PLATFORMS = [
+	{ value: "shopee", label: "Shopee" },
+	{ value: "tiktok", label: "TikTok" },
+	{ value: "lazada", label: "Lazada" },
 ];
 
 const WarrantyForm = () => {
@@ -109,10 +104,14 @@ const WarrantyForm = () => {
 		name: "",
 		phone: "",
 		order_code: "",
+		purchase_platform: "shopee", // Default value
 	});
 	const [loading, setLoading] = useState(false);
 	const [orderCodeError, setOrderCodeError] = useState<string | null>(null);
 	const { toast } = useToast();
+
+	// Dropdown state
+	const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
 	// Captcha state
 	const [captchaValue, setCaptchaValue] = useState<string | null>(null);
@@ -124,9 +123,12 @@ const WarrantyForm = () => {
 		"shopee",
 	);
 	const [currentStep, setCurrentStep] = useState(0);
+	const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
 
 	// Add ref for modal content
 	const modalRef = useRef<HTMLDivElement>(null);
+	// Add ref for dropdown
+	const dropdownRef = useRef<HTMLDivElement>(null);
 
 	// Phone validation state
 	const [phoneValue, setPhoneValue] = useState("");
@@ -134,6 +136,23 @@ const WarrantyForm = () => {
 
 	// Country management - still needed for phone
 	const [countryIso, setCountryIso] = useState<string>("vn"); // Lowercase to match PhoneInput
+
+	// Close dropdown when clicking outside
+	useEffect(() => {
+		function handleClickOutside(event: MouseEvent) {
+			if (
+				dropdownRef.current &&
+				!dropdownRef.current.contains(event.target as Node)
+			) {
+				setIsDropdownOpen(false);
+			}
+		}
+
+		document.addEventListener("mousedown", handleClickOutside);
+		return () => {
+			document.removeEventListener("mousedown", handleClickOutside);
+		};
+	}, []);
 
 	// Improved phone input validation using google-libphonenumber with useCallback
 	const validatePhone = useCallback(
@@ -211,15 +230,71 @@ const WarrantyForm = () => {
 		}
 	};
 
-	// Validate order code function
-	const validateOrderCode = (code: string): boolean => {
-		return code.length >= 14;
+	// Validate order code function based on selected platform
+	const validateOrderCode = (
+		code: string,
+		platform: string,
+	): { isValid: boolean; message: string | null } => {
+		if (!code) {
+			return { isValid: false, message: "Mã đơn hàng là bắt buộc" };
+		}
+
+		// Remove any spaces from the code
+		const trimmedCode = code.trim();
+
+		switch (platform) {
+			case "shopee":
+				// Shopee: 14 characters, alphanumeric
+				const shopeeRegex = /^[a-zA-Z0-9]{14}$/;
+				if (!shopeeRegex.test(trimmedCode)) {
+					return {
+						isValid: false,
+						message: "Mã đơn hàng Shopee phải có đúng 14 ký tự chữ và số",
+					};
+				}
+				break;
+
+			case "tiktok":
+				// TikTok: 18 characters, numbers only
+				const tiktokRegex = /^[0-9]{18}$/;
+				if (!tiktokRegex.test(trimmedCode)) {
+					return {
+						isValid: false,
+						message: "Mã đơn hàng TikTok phải có đúng 18 ký tự số",
+					};
+				}
+				break;
+
+			case "lazada":
+				// Lazada: 15 characters, numbers only
+				const lazadaRegex = /^[0-9]{15}$/;
+				if (!lazadaRegex.test(trimmedCode)) {
+					return {
+						isValid: false,
+						message: "Mã đơn hàng Lazada phải có đúng 15 ký tự số",
+					};
+				}
+				break;
+
+			default:
+				return { isValid: false, message: "Nền tảng không hợp lệ" };
+		}
+
+		return { isValid: true, message: null };
 	};
 
 	// Handle order code blur event
 	const handleOrderCodeBlur = () => {
-		if (formData.order_code && !validateOrderCode(formData.order_code)) {
-			setOrderCodeError("Bạn đã nhập sai mã đơn hàng");
+		if (formData.order_code) {
+			const validation = validateOrderCode(
+				formData.order_code,
+				formData.purchase_platform,
+			);
+			if (!validation.isValid) {
+				setOrderCodeError(validation.message);
+			} else {
+				setOrderCodeError(null);
+			}
 		} else {
 			setOrderCodeError(null);
 		}
@@ -237,6 +312,45 @@ const WarrantyForm = () => {
 			...prev,
 			[name]: value,
 		}));
+
+		// Real-time validation for order code as user types
+		if (name === "order_code" && value) {
+			// Only check format when user has typed enough characters
+			if (
+				(formData.purchase_platform === "shopee" && value.length >= 14) ||
+				(formData.purchase_platform === "tiktok" && value.length >= 18) ||
+				(formData.purchase_platform === "lazada" && value.length >= 15)
+			) {
+				const validation = validateOrderCode(value, formData.purchase_platform);
+				if (!validation.isValid) {
+					setOrderCodeError(validation.message);
+				} else {
+					setOrderCodeError(null);
+				}
+			}
+		}
+	};
+
+	// Handle platform selection
+	const handlePlatformSelect = (platform: string) => {
+		setFormData((prev) => ({
+			...prev,
+			purchase_platform: platform,
+		}));
+		setIsDropdownOpen(false);
+
+		// Update active tab in modal to match selected platform
+		setActiveTab(platform as "shopee" | "tiktok" | "lazada");
+
+		// Re-validate order code if there's one entered already
+		if (formData.order_code) {
+			const validation = validateOrderCode(formData.order_code, platform);
+			if (!validation.isValid) {
+				setOrderCodeError(validation.message);
+			} else {
+				setOrderCodeError(null);
+			}
+		}
 	};
 
 	const validateForm = () => {
@@ -268,12 +382,25 @@ const WarrantyForm = () => {
 			return false;
 		}
 
-		// Check order code length
-		if (formData.order_code.length < 14) {
-			setOrderCodeError("Bạn đã nhập sai mã đơn hàng");
+		// Validate order code based on platform
+		const orderCodeValidation = validateOrderCode(
+			formData.order_code,
+			formData.purchase_platform,
+		);
+		if (!orderCodeValidation.isValid) {
+			setOrderCodeError(orderCodeValidation.message);
 			toast({
 				title: "Lỗi xác thực",
-				description: "Bạn đã nhập sai mã đơn hàng",
+				description: orderCodeValidation.message || "Mã đơn hàng không hợp lệ",
+				variant: "destructive",
+			});
+			return false;
+		}
+
+		if (!formData.purchase_platform) {
+			toast({
+				title: "Lỗi xác thực",
+				description: "Vui lòng chọn nơi mua hàng",
 				variant: "destructive",
 			});
 			return false;
@@ -351,10 +478,24 @@ const WarrantyForm = () => {
 		}
 	};
 
+	// Preload images for better user experience
+	const preloadImages = (steps: Step[]) => {
+		steps.forEach((step) => {
+			const img = new Image();
+			img.src = step.imagePath;
+		});
+	};
+
 	// Handler for opening the guide modal
 	const openGuideModal = () => {
 		setIsModalOpen(true);
+		// Set active tab to match the currently selected purchase platform
+		setActiveTab(formData.purchase_platform as "shopee" | "tiktok" | "lazada");
 		setCurrentStep(0); // Reset to first step whenever opened
+
+		// Preload images for the current platform
+		const currentSteps = getCurrentSteps();
+		preloadImages(currentSteps);
 	};
 
 	// Get the current steps based on active tab
@@ -392,6 +533,14 @@ const WarrantyForm = () => {
 		setCurrentStep(0); // Reset step when changing tabs
 	};
 
+	// Get the display label for current platform
+	const getCurrentPlatformLabel = () => {
+		const platform = PURCHASE_PLATFORMS.find(
+			(p) => p.value === formData.purchase_platform,
+		);
+		return platform ? platform.label : "Chọn nơi mua";
+	};
+
 	return (
 		<div className="min-h-screen bg-gradient-to-b from-slate-100 to-blue-50 flex items-center justify-center p-4">
 			<div className="w-full max-w-4xl">
@@ -401,13 +550,12 @@ const WarrantyForm = () => {
 					<div className="w-full lg:w-1/3 flex flex-col items-start justify-between bg-white/80 rounded-lg shadow-sm mb-6 lg:mb-0 p-4 lg:p-6">
 						<div className="w-full">
 							<div className="w-full flex justify-center lg:justify-start mb-6">
-								<Image
+								<img
 									src="/logo.png"
 									alt="LUG.vn Logo"
 									width={160}
 									height={48}
 									className="h-auto"
-									priority
 								/>
 							</div>
 							<div className="w-full text-gray-700">
@@ -528,6 +676,59 @@ const WarrantyForm = () => {
 										)}
 									</div>
 
+									{/* Purchase Platform Dropdown Field */}
+									<div>
+										<label
+											htmlFor="purchase_platform"
+											className="flex items-center justify-between text-sm font-medium text-gray-700 mb-1"
+										>
+											<span>Nơi mua</span>
+										</label>
+										<div className="relative" ref={dropdownRef}>
+											<button
+												type="button"
+												className="w-full flex items-center justify-between px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent bg-white text-left"
+												onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+												aria-haspopup="listbox"
+												aria-expanded={isDropdownOpen}
+											>
+												<span>{getCurrentPlatformLabel()}</span>
+												<ChevronDown
+													className={`h-5 w-5 transition-transform ${isDropdownOpen ? "transform rotate-180" : ""}`}
+												/>
+											</button>
+
+											{isDropdownOpen && (
+												<div className="absolute z-10 mt-1 w-full rounded-md bg-white shadow-lg border border-gray-200">
+													<ul
+														className="py-1 max-h-60 overflow-auto"
+														role="listbox"
+													>
+														{PURCHASE_PLATFORMS.map((platform) => (
+															<li
+																key={platform.value}
+																className={`px-4 py-2 cursor-pointer hover:bg-gray-100 ${
+																	formData.purchase_platform === platform.value
+																		? "bg-red-50 text-red-600"
+																		: ""
+																}`}
+																onClick={() =>
+																	handlePlatformSelect(platform.value)
+																}
+																role="option"
+																aria-selected={
+																	formData.purchase_platform === platform.value
+																}
+															>
+																{platform.label}
+															</li>
+														))}
+													</ul>
+												</div>
+											)}
+										</div>
+									</div>
+
 									{/* Order Code Field */}
 									<div>
 										<div className="flex justify-between items-center mb-1">
@@ -558,7 +759,13 @@ const WarrantyForm = () => {
 													? "border-red-500 focus:ring-red-500"
 													: "border-gray-300 focus:ring-red-500"
 											} focus:outline-none focus:ring-2 focus:border-transparent`}
-											placeholder="Nhập mã đơn hàng của bạn"
+											placeholder={
+												formData.purchase_platform === "shopee"
+													? "Nhập mã đơn hàng Shopee (14 ký tự)"
+													: formData.purchase_platform === "tiktok"
+														? "Nhập mã đơn hàng TikTok (18 ký tự số)"
+														: "Nhập mã đơn hàng Lazada (15 ký tự số)"
+											}
 											required
 										/>
 										{orderCodeError && (
@@ -685,13 +892,39 @@ const WarrantyForm = () => {
 											<ChevronLeft size={20} />
 										</button>
 
-										<Image
-											src={getCurrentSteps()[currentStep].imagePath}
-											alt={getCurrentSteps()[currentStep].title}
-											width={400}
-											height={300}
-											className="w-full h-64 object-contain mb-4"
-										/>
+										<div
+											className="cursor-zoom-in relative"
+											onClick={() =>
+												setFullscreenImage(
+													getCurrentSteps()[currentStep].imagePath,
+												)
+											}
+										>
+											<img
+												src={getCurrentSteps()[currentStep].imagePath}
+												alt="Hướng dẫn"
+												className="w-full h-64 object-contain mb-4"
+											/>
+											<div className="absolute bottom-2 right-2 bg-white bg-opacity-70 rounded-full p-1">
+												<ZoomIn size={16} className="text-gray-700" />
+											</div>
+
+											{/* Highlight areas if defined */}
+											{getCurrentSteps()[currentStep].highlightAreas?.map(
+												(area, idx) => (
+													<div
+														key={idx}
+														className="absolute border-2 border-red-500 bg-red-500 bg-opacity-20 pointer-events-none"
+														style={{
+															left: `${area.x}px`,
+															top: `${area.y}px`,
+															width: `${area.width}px`,
+															height: `${area.height}px`,
+														}}
+													/>
+												),
+											)}
+										</div>
 
 										<button
 											type="button"
@@ -702,12 +935,14 @@ const WarrantyForm = () => {
 											<ChevronRight size={20} />
 										</button>
 
-										<h4 className="text-lg font-medium">
-											{getCurrentSteps()[currentStep].title}
-										</h4>
-										<p className="text-sm text-gray-600 text-center">
-											{getCurrentSteps()[currentStep].description}
-										</p>
+										{/* Removed title and description since they're already in the images */}
+
+										{/* Display additional notes if available */}
+										{getCurrentSteps()[currentStep].notes && (
+											<p className="text-xs italic text-gray-500 mt-2 text-center">
+												{getCurrentSteps()[currentStep].notes}
+											</p>
+										)}
 									</div>
 								</div>
 
@@ -724,6 +959,31 @@ const WarrantyForm = () => {
 								</div>
 							</div>
 						</div>
+					</div>
+				</div>
+			)}
+
+			{/* Fullscreen image modal */}
+			{fullscreenImage && (
+				<div
+					className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4"
+					onClick={() => setFullscreenImage(null)}
+				>
+					<div className="relative max-w-4xl max-h-screen">
+						<img
+							src={fullscreenImage}
+							alt="Xem chi tiết hướng dẫn"
+							className="max-h-[90vh] max-w-full object-contain"
+						/>
+						<button
+							className="absolute top-2 right-2 bg-white rounded-full p-1"
+							onClick={(e) => {
+								e.stopPropagation();
+								setFullscreenImage(null);
+							}}
+						>
+							<X size={24} />
+						</button>
 					</div>
 				</div>
 			)}
