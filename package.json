@@ -15,7 +15,9 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
+    "framer-motion": "^12.6.2",
     "google-libphonenumber": "^3.2.40",
+    "js-cookie": "^3.0.5",
     "lucide-react": "^0.475.0",
     "next": "15.1.7",
     "react": "^19.0.0",
@@ -30,6 +32,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@types/google-libphonenumber": "^7.4.30",
+    "@types/js-cookie": "^3.0.6",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
