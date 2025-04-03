@@ -3,9 +3,8 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/app/lib/AuthContext";
 import AppWrapper from "@/app/components/AppWrapper";
-
 const inter = Inter({ subsets: ["latin"] });
-
+import { Suspense } from "react";
 export const metadata: Metadata = {
 	metadataBase: new URL("http://dl.lug.info.vn/warranty"),
 	title: "LUG.vn Bảo Hành",
@@ -35,9 +34,11 @@ export default function RootLayout({
 	return (
 		<html lang="en">
 			<body className={inter.className}>
-				<AuthProvider>
-					<AppWrapper>{children}</AppWrapper>
-				</AuthProvider>
+				<Suspense>
+					<AuthProvider>
+						<AppWrapper>{children}</AppWrapper>
+					</AuthProvider>
+				</Suspense>
 			</body>
 		</html>
 	);

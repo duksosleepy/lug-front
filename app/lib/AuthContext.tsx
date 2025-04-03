@@ -1,3 +1,4 @@
+// app/lib/AuthContext.tsx
 "use client";
 
 import {
@@ -8,6 +9,7 @@ import {
 	type ReactNode,
 } from "react";
 import Cookies from "js-cookie";
+import { hashPassphrase } from "@/app/lib/crypto";
 
 // Define the shape of our authentication context
 interface AuthContextType {
@@ -37,8 +39,10 @@ const AuthContext = createContext<AuthContextType>({
 const MAX_ATTEMPTS = 5;
 // Lockout duration in milliseconds (15 minutes)
 const LOCKOUT_DURATION = 15 * 60 * 1000;
-// The correct passphrase (in a real app, this would be server-side)
-const CORRECT_PASSPHRASE = "secure-admin-passphrase";
+// The hash of "secure-admin-passphrase" using SHA-512
+// Replace this with the actual hash of your desired passphrase
+const CORRECT_PASSPHRASE_HASH =
+	"5192eef8166ca6e7754d3fb9876fe48021b783aad34743e6eae8166b9ca240df40050e33580e998f1b3b9ba0920507d7273af3044125c9f7d1896fc8bd13f92c";
 // Cookie options
 const COOKIE_OPTIONS = {
 	expires: 7, // 7 days
@@ -93,7 +97,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 		}
 	}, []);
 
-	// Simulates a login request
+	// Login with secure hash verification
 	const login = async (passphrase: string): Promise<boolean> => {
 		// Don't allow login attempts if account is locked
 		if (isLocked) {
@@ -108,8 +112,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
 			// Simulate API request delay
 			await new Promise((resolve) => setTimeout(resolve, 800));
 
-			// Simple passphrase verification (in a real app, this would be a server call)
-			if (passphrase === CORRECT_PASSPHRASE) {
+			// Hash the provided passphrase
+			const inputHash = await hashPassphrase(passphrase);
+
+			// Secure comparison with the stored hash
+			if (inputHash === CORRECT_PASSPHRASE_HASH) {
 				setIsAuthenticated(true);
 				setAttempts(0);
 
@@ -156,8 +163,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
 				}
 				return false;
 			}
-		} catch (_err) {
-			setError("An error occurred during login. Please try again.");
+		} catch (error) {
+			console.error("Login error:", error);
+			setError(
+				`An error occurred during login: ${error instanceof Error ? error.message : "Please try again."}`,
+			);
 			return false;
 		} finally {
 			setIsLoading(false);

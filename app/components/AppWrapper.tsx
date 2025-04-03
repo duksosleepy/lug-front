@@ -28,7 +28,9 @@ export default function AppWrapper({ children }: AppWrapperProps) {
 		<>
 			<AuthHeader />
 			{isPublicPath && (
-				<div className="text-xs text-gray-400 text-center">Public area</div>
+				<div className="text-xs text-gray-400 text-center">
+					Quý khách vui lòng điền đầy đủ thông tin
+				</div>
 			)}
 			{children}
 		</>
