@@ -9,8 +9,6 @@ import {
 	type ReactNode,
 } from "react";
 import Cookies from "js-cookie";
-import { hashPassphrase } from "@/app/lib/crypto";
-
 // Define the shape of our authentication context
 interface AuthContextType {
 	isAuthenticated: boolean;
@@ -112,6 +110,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 			// Simulate API request delay
 			await new Promise((resolve) => setTimeout(resolve, 800));
 
+			const { hashPassphrase } = await import("./crypto");
 			// Hash the provided passphrase
 			const inputHash = await hashPassphrase(passphrase);
 
