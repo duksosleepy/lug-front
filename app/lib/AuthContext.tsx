@@ -47,6 +47,8 @@ const COOKIE_OPTIONS = {
 	expires: 7, // 7 days
 	secure: process.env.NODE_ENV === "production",
 	sameSite: "strict" as const,
+	path: "/", // Ensure cookie is available across the entire domain
+	// domain: "yourdomain.com", // Uncomment and set this for production
 };
 
 interface AuthProviderProps {
@@ -121,7 +123,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
 				// Set authentication cookie
 				Cookies.set("isAuthenticated", "true", COOKIE_OPTIONS);
-
+				// Allow a short delay for the cookie to be properly set
+				await new Promise((resolve) => setTimeout(resolve, 100));
 				return true;
 			} else {
 				// Increment failed attempts
