@@ -45,10 +45,11 @@ const CORRECT_PASSPHRASE_HASH =
 // Cookie options
 const COOKIE_OPTIONS = {
 	expires: 7, // 7 days
-	secure: process.env.NODE_ENV === "production",
-	sameSite: "strict" as const,
-	path: "/", // Ensure cookie is available across the entire domain
-	// domain: "yourdomain.com", // Uncomment and set this for production
+	secure:
+		process.env.NODE_ENV === "production" && process.env.USE_HTTPS === "true", // Chỉ bật secure khi dùng HTTPS
+	sameSite: "lax" as const, // Thay đổi từ strict sang lax để linh hoạt hơn
+	path: "/",
+	// Không cần set domain khi dùng IP
 };
 
 interface AuthProviderProps {
@@ -67,7 +68,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
 	useEffect(() => {
 		const authCookie = Cookies.get("isAuthenticated");
 		if (authCookie === "true") {
-			setIsAuthenticated(true);
+			console.error("Cookie was not set correctly");
+			// Có thể thử thêm lần nữa
+			Cookies.set("isAuthenticated", "true", COOKIE_OPTIONS);
 		}
 
 		// Check for account lockout
@@ -124,7 +127,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
 				// Set authentication cookie
 				Cookies.set("isAuthenticated", "true", COOKIE_OPTIONS);
 				// Allow a short delay for the cookie to be properly set
-				await new Promise((resolve) => setTimeout(resolve, 100));
+				await new Promise((resolve) =>
+					setTimeout(
+						resolve,
+						process.env.NODE_ENV === "production" ? 500 : 100,
+					),
+				);
 				return true;
 			} else {
 				// Increment failed attempts

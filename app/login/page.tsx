@@ -74,9 +74,12 @@ export default function LoginPage() {
 				const currentAuth = Cookies.get("isAuthenticated");
 				if (currentAuth) {
 					Cookies.set("isAuthenticated", currentAuth, {
-						expires: 30, // 30 days
-						secure: process.env.NODE_ENV === "production",
-						sameSite: "strict",
+						expires: 7, // 30 days
+						secure:
+							process.env.NODE_ENV === "production" &&
+							process.env.USE_HTTPS === "true",
+						sameSite: "lax",
+						path: "/",
 					});
 				}
 			}
