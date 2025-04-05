@@ -20,9 +20,15 @@ export default function AppWrapper({ children }: AppWrapperProps) {
 		(path) => pathname === path || pathname.startsWith(`${path}/`),
 	);
 
-	// Use auth protection hook for client-side protection
-	// This is a backup to the middleware for client-side navigation
-	useAuthProtection();
+	// Luôn sử dụng hook, nhưng nó sẽ chỉ chuyển hướng khi cần thiết
+	const { isAuthenticated } = useAuthProtection();
+
+	// Thêm logging để debug
+	console.log("AppWrapper render:", {
+		pathname,
+		isPublicPath,
+		isAuthenticated,
+	});
 
 	return (
 		<>

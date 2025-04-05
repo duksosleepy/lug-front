@@ -16,6 +16,14 @@ export function middleware(request: NextRequest) {
 	const isAuthenticated =
 		request.cookies.get("isAuthenticated")?.value === "true";
 
+	// Thêm debug để kiểm tra
+	console.log({
+		path: request.nextUrl.pathname,
+		isPublicPath,
+		isAuthenticated,
+		cookie: request.cookies.get("isAuthenticated"),
+	});
+
 	// Path is not public AND user is not authenticated
 	if (!isPublicPath && !isAuthenticated) {
 		// Store the original URL to redirect after login

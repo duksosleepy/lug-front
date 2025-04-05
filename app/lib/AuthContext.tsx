@@ -1,4 +1,3 @@
-// app/lib/AuthContext.tsx
 "use client";
 
 import {
@@ -6,11 +5,12 @@ import {
 	useState,
 	useContext,
 	useEffect,
+	useRef,
 	type ReactNode,
 } from "react";
 import Cookies from "js-cookie";
 import { hashPassphrase } from "@/app/lib/crypto";
-// Define the shape of our authentication context
+
 interface AuthContextType {
 	isAuthenticated: boolean;
 	login: (passphrase: string) => Promise<boolean>;
@@ -22,7 +22,6 @@ interface AuthContextType {
 	unlockTime: Date | null;
 }
 
-// Create the context with default values
 const AuthContext = createContext<AuthContextType>({
 	isAuthenticated: false,
 	login: async () => false,
@@ -34,22 +33,17 @@ const AuthContext = createContext<AuthContextType>({
 	unlockTime: null,
 });
 
-// Maximum failed attempts before lockout
 const MAX_ATTEMPTS = 5;
-// Lockout duration in milliseconds (15 minutes)
 const LOCKOUT_DURATION = 15 * 60 * 1000;
-// The hash of "secure-admin-passphrase" using SHA-512
-// Replace this with the actual hash of your desired passphrase
 const CORRECT_PASSPHRASE_HASH =
 	"5192eef8166ca6e7754d3fb9876fe48021b783aad34743e6eae8166b9ca240df40050e33580e998f1b3b9ba0920507d7273af3044125c9f7d1896fc8bd13f92c";
-// Cookie options
+
 const COOKIE_OPTIONS = {
-	expires: 7, // 7 days
+	expires: 7,
 	secure:
-		process.env.NODE_ENV === "production" && process.env.USE_HTTPS === "true", // Chỉ bật secure khi dùng HTTPS
-	sameSite: "lax" as const, // Thay đổi từ strict sang lax để linh hoạt hơn
+		process.env.NODE_ENV === "production" && process.env.USE_HTTPS === "true",
+	sameSite: "lax" as const,
 	path: "/",
-	// Không cần set domain khi dùng IP
 };
 
 interface AuthProviderProps {
@@ -57,53 +51,78 @@ interface AuthProviderProps {
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
-	const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+	// Use ref to track initial mount
+	const isMounted = useRef(false);
+
+	// Set initial state based on cookie - critical for hydration
+	const initialAuth =
+		typeof window !== "undefined"
+			? Cookies.get("isAuthenticated") === "true"
+			: false;
+
+	const [isAuthenticated, setIsAuthenticated] = useState<boolean>(initialAuth);
 	const [isLoading, setIsLoading] = useState<boolean>(false);
 	const [error, setError] = useState<string | null>(null);
 	const [attempts, setAttempts] = useState<number>(0);
 	const [isLocked, setIsLocked] = useState<boolean>(false);
 	const [unlockTime, setUnlockTime] = useState<Date | null>(null);
 
-	// Check cookie on initial load to restore session
+	// Cookie change listener
 	useEffect(() => {
-		const authCookie = Cookies.get("isAuthenticated");
-		if (authCookie === "true") {
-			console.error("Cookie was not set correctly");
-			// Có thể thử thêm lần nữa
-			Cookies.set("isAuthenticated", "true", COOKIE_OPTIONS);
+		// Skip on initial mount
+		if (!isMounted.current) {
+			isMounted.current = true;
+			return;
 		}
 
-		// Check for account lockout
+		if (isAuthenticated) {
+			// Ensure cookie is set when state is authenticated
+			if (Cookies.get("isAuthenticated") !== "true") {
+				console.log("Setting auth cookie to match state");
+				Cookies.set("isAuthenticated", "true", COOKIE_OPTIONS);
+			}
+		} else {
+			// Ensure cookie is removed when state is not authenticated
+			if (Cookies.get("isAuthenticated") === "true") {
+				console.log("Removing auth cookie to match state");
+				Cookies.remove("isAuthenticated");
+			}
+		}
+	}, [isAuthenticated]);
+
+	// Check for account lockout on initial load
+	useEffect(() => {
 		const lockoutCookie = Cookies.get("accountLockout");
 		if (lockoutCookie) {
-			const lockoutData = JSON.parse(lockoutCookie);
-			const now = new Date();
-			const lockUntil = new Date(lockoutData.until);
+			try {
+				const lockoutData = JSON.parse(lockoutCookie);
+				const now = new Date();
+				const lockUntil = new Date(lockoutData.until);
 
-			if (now < lockUntil) {
-				setIsLocked(true);
-				setUnlockTime(lockUntil);
-				setAttempts(lockoutData.attempts);
+				if (now < lockUntil) {
+					setIsLocked(true);
+					setUnlockTime(lockUntil);
+					setAttempts(lockoutData.attempts);
 
-				// Set a timeout to automatically unlock when the time is up
-				const timeoutId = setTimeout(() => {
-					setIsLocked(false);
-					setUnlockTime(null);
-					setAttempts(0);
+					const timeoutId = setTimeout(() => {
+						setIsLocked(false);
+						setUnlockTime(null);
+						setAttempts(0);
+						Cookies.remove("accountLockout");
+					}, lockUntil.getTime() - now.getTime());
+
+					return () => clearTimeout(timeoutId);
+				} else {
 					Cookies.remove("accountLockout");
-				}, lockUntil.getTime() - now.getTime());
-
-				return () => clearTimeout(timeoutId);
-			} else {
-				// Lockout period expired
+				}
+			} catch (e) {
+				console.error("Error parsing lockout cookie", e);
 				Cookies.remove("accountLockout");
 			}
 		}
 	}, []);
 
-	// Login with secure hash verification
 	const login = async (passphrase: string): Promise<boolean> => {
-		// Don't allow login attempts if account is locked
 		if (isLocked) {
 			setError("Account is temporarily locked. Please try again later.");
 			return false;
@@ -113,20 +132,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
 		setError(null);
 
 		try {
-			// Simulate API request delay
 			await new Promise((resolve) => setTimeout(resolve, 800));
-
-			// Hash the provided passphrase
 			const inputHash = await hashPassphrase(passphrase);
 
-			// Secure comparison with the stored hash
 			if (inputHash === CORRECT_PASSPHRASE_HASH) {
 				setIsAuthenticated(true);
 				setAttempts(0);
-
-				// Set authentication cookie
 				Cookies.set("isAuthenticated", "true", COOKIE_OPTIONS);
-				// Allow a short delay for the cookie to be properly set
+
 				await new Promise((resolve) =>
 					setTimeout(
 						resolve,
@@ -135,13 +148,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
 				);
 				return true;
 			} else {
-				// Increment failed attempts
 				const newAttempts = attempts + 1;
 				setAttempts(newAttempts);
 
-				// Set appropriate error message
 				if (newAttempts >= MAX_ATTEMPTS) {
-					// Lock the account
 					const lockUntil = new Date(Date.now() + LOCKOUT_DURATION);
 					setIsLocked(true);
 					setUnlockTime(lockUntil);
@@ -149,7 +159,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
 						`Too many failed attempts. Your account is locked until ${lockUntil.toLocaleTimeString()}.`,
 					);
 
-					// Store lockout in cookie
 					Cookies.set(
 						"accountLockout",
 						JSON.stringify({
@@ -159,7 +168,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
 						COOKIE_OPTIONS,
 					);
 
-					// Set a timeout to automatically unlock
 					setTimeout(() => {
 						setIsLocked(false);
 						setUnlockTime(null);
