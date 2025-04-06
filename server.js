@@ -9,8 +9,8 @@ const app = next({ dev });
 const handle = app.getRequestHandler();
 
 const httpsOptions = {
-	key: fs.readFileSync("/etc/letsencrypt/live/yourdomain.com/privkey.pem"),
-	cert: fs.readFileSync("/etc/letsencrypt/live/yourdomain.com/fullchain.pem"),
+	key: fs.readFileSync("/etc/letsencrypt/live/dl.lug.center/privkey.pem"),
+	cert: fs.readFileSync("/etc/letsencrypt/live/dl.lug.center/fullchain.pem"),
 };
 
 app.prepare().then(() => {
@@ -19,6 +19,6 @@ app.prepare().then(() => {
 		handle(req, res, parsedUrl);
 	}).listen(443, (err) => {
 		if (err) throw err;
-		console.log("> Ready on https://yourdomain.com");
+		console.log("> Ready on https://dl.lug.center");
 	});
 });
