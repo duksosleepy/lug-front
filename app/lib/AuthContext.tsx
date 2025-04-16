@@ -90,6 +90,44 @@ export function AuthProvider({ children }: AuthProviderProps) {
 		}
 	}, [isAuthenticated]);
 
+	// Add a cookie expiration check that runs periodically and on focus
+	useEffect(() => {
+		// Function to check if cookie is still valid
+		const checkCookieStatus = () => {
+			const cookieExists = Cookies.get("isAuthenticated") === "true";
+
+			// If state says authenticated but cookie is gone, update state
+			if (isAuthenticated && !cookieExists) {
+				console.log("Auth cookie expired or removed, updating state");
+				setIsAuthenticated(false);
+				setAttempts(0); // Reset attempts when session expires
+			}
+		};
+
+		// Check when window gets focus (user returns to tab)
+		const handleFocus = () => {
+			checkCookieStatus();
+		};
+
+		// Check status periodically (every 30 seconds)
+		const intervalId = setInterval(checkCookieStatus, 30000);
+
+		// Add focus event listener
+		if (typeof window !== "undefined") {
+			window.addEventListener("focus", handleFocus);
+		}
+
+		// Initial check
+		checkCookieStatus();
+
+		return () => {
+			clearInterval(intervalId);
+			if (typeof window !== "undefined") {
+				window.removeEventListener("focus", handleFocus);
+			}
+		};
+	}, [isAuthenticated]);
+
 	// Check for account lockout on initial load
 	useEffect(() => {
 		const lockoutCookie = Cookies.get("accountLockout");
