@@ -56,7 +56,6 @@ interface Step {
 const shopeeSteps: Step[] = [
 	{
 		imagePath: "/images/shopee/1.png",
-		notes: "Vào mục 'Tôi' > 'Đơn mua' trong ứng dụng Shopee",
 	},
 	{
 		imagePath: "/images/shopee/2.png",
@@ -130,7 +129,7 @@ const WarrantyForm = () => {
 		"shopee",
 	);
 	const [currentStep, setCurrentStep] = useState(0);
-	const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
+	const [fullscreenImageIndex, setFullscreenImageIndex] = useState<number | null>(null);
 
 	// Add ref for modal content
 	const modalRef = useRef<HTMLDivElement>(null);
@@ -576,6 +575,34 @@ const WarrantyForm = () => {
 		setCurrentStep(0); // Reset step when changing tabs
 	};
 
+	// Thêm hàm để điều hướng các hình ảnh trong chế độ toàn màn hình
+	const navigateFullscreenImage = (direction: 'next' | 'prev', e?: React.MouseEvent) => {
+		e?.stopPropagation(); // Ngăn chặn sự kiện click lan tỏa và đóng modal
+
+		if (fullscreenImageIndex === null) return;
+
+		const steps = getCurrentSteps();
+		let newIndex;
+
+		if (direction === 'next') {
+			newIndex = (fullscreenImageIndex + 1) % steps.length;
+		} else {
+			newIndex = (fullscreenImageIndex - 1 + steps.length) % steps.length;
+		}
+
+		setFullscreenImageIndex(newIndex);
+	};
+
+	// Hàm mở chế độ xem toàn màn hình - lưu index thay vì URL
+	const openFullscreenImage = (index: number) => {
+		setFullscreenImageIndex(index);
+	};
+
+	// Đóng chế độ xem toàn màn hình
+	const closeFullscreenImage = () => {
+		setFullscreenImageIndex(null);
+	};
+
 	// Get the display label for current platform
 	const getCurrentPlatformLabel = () => {
 		const platform = PURCHASE_PLATFORMS.find(
@@ -939,11 +966,7 @@ const WarrantyForm = () => {
 
 										<div
 											className="cursor-zoom-in relative w-full h-64 mb-4"
-											onClick={() =>
-												setFullscreenImage(
-													getCurrentSteps()[currentStep].imagePath,
-												)
-											}
+											onClick={() => openFullscreenImage(currentStep)}
 										>
 											{/* REPLACED: img with Next.js Image component */}
 											<Image
@@ -1011,31 +1034,62 @@ const WarrantyForm = () => {
 			)}
 
 			{/* Fullscreen image modal */}
-			{fullscreenImage && (
+			{fullscreenImageIndex !== null && (
 				<div
 					className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4"
-					onClick={() => setFullscreenImage(null)}
+					onClick={closeFullscreenImage}
 				>
 					<div className="relative max-w-4xl max-h-screen">
-						{/* REPLACED: img with Next.js Image component */}
+						{/* Navigation buttons */}
+						<button
+							className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-50 hover:bg-opacity-70 rounded-full p-2 z-10"
+							onClick={(e) => navigateFullscreenImage('prev', e)}
+							aria-label="Previous image"
+						>
+							<ChevronLeft size={24} />
+						</button>
+
+						<button
+							className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-50 hover:bg-opacity-70 rounded-full p-2 z-10"
+							onClick={(e) => navigateFullscreenImage('next', e)}
+							aria-label="Next image"
+						>
+							<ChevronRight size={24} />
+						</button>
+
+						{/* Image container */}
 						<div className="relative w-[800px] h-[600px]">
 							<Image
-								src={fullscreenImage}
+								src={getCurrentSteps()[fullscreenImageIndex].imagePath}
 								alt="Xem chi tiết hướng dẫn"
 								fill
 								className="object-contain"
 								sizes="(max-width: 768px) 100vw, 80vw"
 							/>
 						</div>
+
+						{/* Close button */}
 						<button
 							className="absolute top-2 right-2 bg-white rounded-full p-1"
 							onClick={(e) => {
 								e.stopPropagation();
-								setFullscreenImage(null);
+								closeFullscreenImage();
 							}}
 						>
 							<X size={24} />
 						</button>
+
+						{/* Step indicator */}
+						<div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2">
+							{getCurrentSteps().map((_, index) => (
+								<div
+									key={index}
+									className={`w-2 h-2 rounded-full ${
+										fullscreenImageIndex === index ? "bg-white" : "bg-gray-500"
+									}`}
+								/>
+							))}
+						</div>
 					</div>
 				</div>
 			)}
