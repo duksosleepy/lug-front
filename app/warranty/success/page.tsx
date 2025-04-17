@@ -32,7 +32,7 @@ export default function WarrantySuccessPage() {
 						Thank You!
 					</h1>
 					<p className="text-gray-600">
-						Your warranty information has been submitted successfully.
+					Cảm ơn bạn! Thông tin của bạn đã được ghi nhận bạn có thể xem thông tin bảo hành qua app LUG ID
 					</p>
 				</CardContent>
 			</Card>
