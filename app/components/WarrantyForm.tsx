@@ -458,32 +458,14 @@ const WarrantyForm = () => {
 
 			// Kiểm tra kết quả trả về từ API
 			if (!responseData.success) {
-				// Kiểm tra nếu lỗi liên quan đến mã đơn hàng không tồn tại
-				if (
-					responseData.message &&
-					responseData.message.includes("Không tìm thấy đơn hàng")
-				) {
-					// Hiển thị thông báo lỗi đặc biệt và cập nhật UI
-					toast({
-						title: "Mã đơn hàng không hợp lệ",
-						description: responseData.message,
-						variant: "destructive",
-					});
-
-					// Đặt lỗi trực tiếp trên trường đơn hàng
-					setOrderCodeError(responseData.message);
-
-					// Focus vào trường đơn hàng để người dùng có thể dễ dàng sửa
-					document.getElementById("order_code")?.focus();
-				} else {
-					// Các lỗi khác
-					toast({
-						title: "Lỗi",
-						description:
-							responseData.message || "Không thể gửi biểu mẫu bảo hành",
-						variant: "destructive",
-					});
-				}
+				// Không kiểm tra "Không tìm thấy đơn hàng" nữa
+				// Hiển thị thông báo lỗi chung cho tất cả các lỗi
+				toast({
+					title: "Lỗi",
+					description:
+						responseData.message || "Không thể gửi biểu mẫu bảo hành",
+					variant: "destructive",
+				});
 
 				// Reset captcha khi có lỗi
 				if (recaptchaRef.current) {
