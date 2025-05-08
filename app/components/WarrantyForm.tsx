@@ -129,7 +129,9 @@ const WarrantyForm = () => {
 		"shopee",
 	);
 	const [currentStep, setCurrentStep] = useState(0);
-	const [fullscreenImageIndex, setFullscreenImageIndex] = useState<number | null>(null);
+	const [fullscreenImageIndex, setFullscreenImageIndex] = useState<
+		number | null
+	>(null);
 
 	// Add ref for modal content
 	const modalRef = useRef<HTMLDivElement>(null);
@@ -458,14 +460,24 @@ const WarrantyForm = () => {
 
 			// Kiểm tra kết quả trả về từ API
 			if (!responseData.success) {
-				// Không kiểm tra "Không tìm thấy đơn hàng" nữa
-				// Hiển thị thông báo lỗi chung cho tất cả các lỗi
-				toast({
-					title: "Lỗi",
-					description:
-						responseData.message || "Không thể gửi biểu mẫu bảo hành",
-					variant: "destructive",
-				});
+				// Check if the order is already registered for warranty
+				if (responseData.already_registered) {
+					toast({
+						title: "Thông báo",
+						description:
+							responseData.message ||
+							"Mã đơn hàng này đã được đăng ký bảo hành trước đó.",
+						variant: "destructive",
+					});
+				} else {
+					// Hiển thị thông báo lỗi chung cho tất cả các lỗi khác
+					toast({
+						title: "Lỗi",
+						description:
+							responseData.message || "Không thể gửi biểu mẫu bảo hành",
+						variant: "destructive",
+					});
+				}
 
 				// Reset captcha khi có lỗi
 				if (recaptchaRef.current) {
@@ -558,7 +570,10 @@ const WarrantyForm = () => {
 	};
 
 	// Thêm hàm để điều hướng các hình ảnh trong chế độ toàn màn hình
-	const navigateFullscreenImage = (direction: 'next' | 'prev', e?: React.MouseEvent) => {
+	const navigateFullscreenImage = (
+		direction: "next" | "prev",
+		e?: React.MouseEvent,
+	) => {
 		e?.stopPropagation(); // Ngăn chặn sự kiện click lan tỏa và đóng modal
 
 		if (fullscreenImageIndex === null) return;
@@ -566,7 +581,7 @@ const WarrantyForm = () => {
 		const steps = getCurrentSteps();
 		let newIndex;
 
-		if (direction === 'next') {
+		if (direction === "next") {
 			newIndex = (fullscreenImageIndex + 1) % steps.length;
 		} else {
 			newIndex = (fullscreenImageIndex - 1 + steps.length) % steps.length;
@@ -699,29 +714,36 @@ const WarrantyForm = () => {
 												disableDialCodeAndPrefix={false}
 											/>
 											<style jsx global>{`
-												/* Synchronized focus states for phone input */
-												.phone-input-wrapper {
-													position: relative;
-												}
+                        /* Synchronized focus states for phone input */
+                        .phone-input-wrapper {
+                          position: relative;
+                        }
 
-												.phone-input-wrapper .react-international-phone-input-container {
-													display: flex;
-												}
+                        .phone-input-wrapper
+                          .react-international-phone-input-container {
+                          display: flex;
+                        }
 
-												.phone-input-wrapper .react-international-phone-country-selector-button {
-													transition: all 0.2s ease-in-out;
-												}
+                        .phone-input-wrapper
+                          .react-international-phone-country-selector-button {
+                          transition: all 0.2s ease-in-out;
+                        }
 
-												.phone-input-wrapper .react-international-phone-input:focus + .react-international-phone-country-selector-button,
-												.phone-input-wrapper .react-international-phone-input:focus-within + .react-international-phone-country-selector-button {
-													border-color: rgb(239, 68, 68) !important;
-													box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.3);
-												}
+                        .phone-input-wrapper
+                          .react-international-phone-input:focus
+                          + .react-international-phone-country-selector-button,
+                        .phone-input-wrapper
+                          .react-international-phone-input:focus-within
+                          + .react-international-phone-country-selector-button {
+                          border-color: rgb(239, 68, 68) !important;
+                          box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.3);
+                        }
 
-												.phone-input-wrapper .react-international-phone-input:focus {
-													z-index: 1;
-												}
-											`}</style>
+                        .phone-input-wrapper
+                          .react-international-phone-input:focus {
+                          z-index: 1;
+                        }
+                      `}</style>
 										</div>
 										{phoneValue && !isPhoneValid && (
 											<p className="text-red-500 text-xs mt-1">
@@ -1025,7 +1047,7 @@ const WarrantyForm = () => {
 						{/* Navigation buttons */}
 						<button
 							className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-50 hover:bg-opacity-70 rounded-full p-2 z-10"
-							onClick={(e) => navigateFullscreenImage('prev', e)}
+							onClick={(e) => navigateFullscreenImage("prev", e)}
 							aria-label="Previous image"
 						>
 							<ChevronLeft size={24} />
@@ -1033,7 +1055,7 @@ const WarrantyForm = () => {
 
 						<button
 							className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-50 hover:bg-opacity-70 rounded-full p-2 z-10"
-							onClick={(e) => navigateFullscreenImage('next', e)}
+							onClick={(e) => navigateFullscreenImage("next", e)}
 							aria-label="Next image"
 						>
 							<ChevronRight size={24} />

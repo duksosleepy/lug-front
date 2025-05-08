@@ -2,5 +2,9 @@
     "editor.formatOnType": true,
     "[commonlisp]": {
         "editor.wordSeparators": "`|;:'\",()"
-    }
+    },
+    "debug.javascript.defaultRuntimeExecutable": {
+        "pwa-node": "/home/khoi/.local/share/mise/shims/node"
+    },
+    "python.defaultInterpreterPath": "/home/khoi/.local/share/mise/installs/python/3.13.3/bin/python"
 }
