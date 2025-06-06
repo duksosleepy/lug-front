@@ -434,6 +434,24 @@ const WarrantyForm = () => {
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 
+		const currentPhoneValid = validatePhone(phoneValue);
+		setIsPhoneValid(currentPhoneValid);
+
+		// Use the current value, not the state which might be stale
+		if (
+			!formData.name ||
+			!currentPhoneValid ||
+			!formData.order_code ||
+			!captchaValue
+		) {
+			toast({
+				title: "Lỗi xác thực",
+				description: "Vui lòng điền đầy đủ thông tin bắt buộc",
+				variant: "destructive",
+			});
+			return;
+		}
+
 		if (!validateForm()) {
 			return;
 		}

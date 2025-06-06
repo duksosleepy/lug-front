@@ -38,12 +38,13 @@ const LOCKOUT_DURATION = 15 * 60 * 1000;
 const CORRECT_PASSPHRASE_HASH =
 	"5192eef8166ca6e7754d3fb9876fe48021b783aad34743e6eae8166b9ca240df40050e33580e998f1b3b9ba0920507d7273af3044125c9f7d1896fc8bd13f92c";
 
+// Enhance cookie security in AuthContext.tsx
 const COOKIE_OPTIONS = {
 	expires: 7,
-	secure:
-		process.env.NODE_ENV === "production" && process.env.USE_HTTPS === "true",
+	secure: process.env.NODE_ENV === "production",
 	sameSite: "lax" as const,
 	path: "/",
+	httpOnly: true, // Make cookies inaccessible to JavaScript
 };
 
 interface AuthProviderProps {

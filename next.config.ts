@@ -23,6 +23,10 @@ const nextConfig: NextConfig = {
 				source: "/sapo/sync",
 				destination: "http://localhost:8000/sapo/sync",
 			},
+			{
+				source: "/process/accounting",
+				destination: "http://localhost:8000/process/accounting",
+			},
 		];
 	},
 	experimental: {

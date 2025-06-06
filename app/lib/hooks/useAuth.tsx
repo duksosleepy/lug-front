@@ -17,13 +17,6 @@ export function useAuthProtection() {
 	const hasRedirected = useRef(false);
 
 	useEffect(() => {
-		// Thêm logging để debug
-		console.log("useAuthProtection: ", {
-			pathname,
-			isAuthenticated,
-			hasRedirected: hasRedirected.current,
-		});
-
 		// Check if the current path is public
 		const isPublicPath = publicPaths.some(
 			(path) => pathname === path || pathname.startsWith(`${path}/`),
