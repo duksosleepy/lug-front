@@ -44,7 +44,6 @@ const COOKIE_OPTIONS = {
 	secure: process.env.NODE_ENV === "production",
 	sameSite: "lax" as const,
 	path: "/",
-	httpOnly: true, // Make cookies inaccessible to JavaScript
 };
 
 interface AuthProviderProps {
