@@ -11,6 +11,8 @@ import {
 import Cookies from "js-cookie";
 import { hashPassphrase } from "@/app/lib/crypto";
 
+//
+
 interface AuthContextType {
 	isAuthenticated: boolean;
 	login: (passphrase: string) => Promise<boolean>;
