@@ -25,7 +25,7 @@ const nextConfig: NextConfig = {
 			},
 			{
 				source: "/process/accounting",
-				destination: "http://localhost:8000/process/accounting",
+				destination: "http://localhost:8000/accounting",
 			},
 		];
 	},
