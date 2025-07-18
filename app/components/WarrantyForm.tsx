@@ -2,9 +2,8 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { PhoneInput } from "react-international-phone";
 import "react-international-phone/style.css";
-import { PhoneNumberUtil } from "google-libphonenumber";
 import ReCAPTCHA from "react-google-recaptcha";
-import Image from "next/image"; // Added Next.js Image import
+import Image from "next/image";
 import {
 	Card,
 	CardContent,
@@ -22,14 +21,18 @@ import {
 	ZoomIn,
 } from "lucide-react";
 
-// Initialize PhoneNumberUtil instance
-const phoneUtil = PhoneNumberUtil.getInstance();
+// Import our custom phone validation
+import { 
+	isValidPhoneVN, 
+	formatPhoneNumberVN, 
+	getPhoneErrorMessage
+} from "@/app/lib/phoneValidation";
 
 interface FormData {
 	name: string;
 	phone: string;
 	order_code: string;
-	purchase_platform: string; // Field for purchase platform
+	purchase_platform: string;
 }
 
 // Phone input data interface
@@ -42,9 +45,8 @@ interface PhoneInputData {
 // Step type for the carousel
 interface Step {
 	imagePath: string;
-	notes?: string; // Optional additional notes for each step
+	notes?: string;
 	highlightAreas?: {
-		// Added missing highlightAreas property
 		x: number;
 		y: number;
 		width: number;
@@ -54,48 +56,24 @@ interface Step {
 
 // Real data for the carousel steps with actual images
 const shopeeSteps: Step[] = [
-	{
-		imagePath: "/images/shopee/1.png",
-	},
-	{
-		imagePath: "/images/shopee/2.png",
-	},
-	{
-		imagePath: "/images/shopee/3.png",
-	},
-	{
-		imagePath: "/images/shopee/4.png",
-	},
+	{ imagePath: "/images/shopee/1.png" },
+	{ imagePath: "/images/shopee/2.png" },
+	{ imagePath: "/images/shopee/3.png" },
+	{ imagePath: "/images/shopee/4.png" },
 ];
 
 const tiktokSteps: Step[] = [
-	{
-		imagePath: "/images/tiktok/1.png",
-	},
-	{
-		imagePath: "/images/tiktok/2.png",
-	},
-	{
-		imagePath: "/images/tiktok/3.png",
-	},
-	{
-		imagePath: "/images/tiktok/4.png",
-	},
+	{ imagePath: "/images/tiktok/1.png" },
+	{ imagePath: "/images/tiktok/2.png" },
+	{ imagePath: "/images/tiktok/3.png" },
+	{ imagePath: "/images/tiktok/4.png" },
 ];
 
 const lazadaSteps: Step[] = [
-	{
-		imagePath: "/images/lazada/1.png",
-	},
-	{
-		imagePath: "/images/lazada/2.png",
-	},
-	{
-		imagePath: "/images/lazada/3.png",
-	},
-	{
-		imagePath: "/images/lazada/4.png",
-	},
+	{ imagePath: "/images/lazada/1.png" },
+	{ imagePath: "/images/lazada/2.png" },
+	{ imagePath: "/images/lazada/3.png" },
+	{ imagePath: "/images/lazada/4.png" },
 ];
 
 // Available purchase platforms
@@ -110,7 +88,7 @@ const WarrantyForm = () => {
 		name: "",
 		phone: "",
 		order_code: "",
-		purchase_platform: "shopee", // Default value
+		purchase_platform: "shopee",
 	});
 	const [loading, setLoading] = useState(false);
 	const [orderCodeError, setOrderCodeError] = useState<string | null>(null);
@@ -125,25 +103,22 @@ const WarrantyForm = () => {
 
 	// Modal and carousel state
 	const [isModalOpen, setIsModalOpen] = useState(false);
-	const [activeTab, setActiveTab] = useState<"shopee" | "tiktok" | "lazada">(
-		"shopee",
-	);
+	const [activeTab, setActiveTab] = useState<"shopee" | "tiktok" | "lazada">("shopee");
 	const [currentStep, setCurrentStep] = useState(0);
-	const [fullscreenImageIndex, setFullscreenImageIndex] = useState<
-		number | null
-	>(null);
+	const [fullscreenImageIndex, setFullscreenImageIndex] = useState<number | null>(null);
 
 	// Add ref for modal content
 	const modalRef = useRef<HTMLDivElement>(null);
 	// Add ref for dropdown
 	const dropdownRef = useRef<HTMLDivElement>(null);
 
-	// Phone validation state
+	// Phone validation state - Using our custom validation
 	const [phoneValue, setPhoneValue] = useState("");
+	const [phoneError, setPhoneError] = useState<string | null>(null);
 	const [isPhoneValid, setIsPhoneValid] = useState(false);
 
-	// Country management - still needed for phone
-	const [countryIso, setCountryIso] = useState<string>("vn"); // Lowercase to match PhoneInput
+	// Country management
+	const [countryIso, setCountryIso] = useState<string>("vn");
 
 	// Close dropdown when clicking outside
 	useEffect(() => {
@@ -162,77 +137,74 @@ const WarrantyForm = () => {
 		};
 	}, []);
 
-	// Improved phone input validation using google-libphonenumber with useCallback
-	const validatePhone = useCallback(
-		(phone: string) => {
-			// Remove non-digit characters to count only the digits.
-			const numericPhone = phone.replace(/\D/g, "");
+	// Phone validation using EXACT backend regex and logic
+	const validatePhoneInput = useCallback((phone: string) => {
+		const isValid = isValidPhoneVN(phone);
+		const errorMsg = getPhoneErrorMessage(phone);
+		
+		setIsPhoneValid(isValid);
+		setPhoneError(errorMsg);
+		
+		// Debug log to verify frontend validation
+		if (process.env.NODE_ENV === 'development') {
+			console.log(`📱 Phone validation: "${phone}" → valid: ${isValid}, formatted: "${formatPhoneNumberVN(phone)}"`);
+		}
+		
+		return isValid;
+	}, []);
 
-			// If too few digits are entered, skip parsing.
-			if (numericPhone.length < 5) {
-				return false;
-			}
-
-			try {
-				// Pass the region code (ensure it's uppercase)
-				const parsedNumber = phoneUtil.parseAndKeepRawInput(
-					phone,
-					countryIso.toUpperCase(),
-				);
-				return phoneUtil.isValidNumber(parsedNumber);
-			} catch (error) {
-				console.error("Phone validation error:", error);
-				return false;
-			}
-		},
-		[countryIso],
-	);
-
-	// Handle phone input changes with country code persistence
+	// Handle phone input changes with improved validation
 	const handlePhoneChange = (phone: string, data: PhoneInputData) => {
-		// Check if the phone input is empty or just contains non-digit characters
+		// Check if the phone input is empty
 		if (!phone || phone.replace(/\D/g, "") === "") {
-			// Reset to empty string - the defaultCountry will ensure country code is visible
 			setPhoneValue("");
+			setPhoneError(null);
+			setIsPhoneValid(false);
 		} else {
 			setPhoneValue(phone);
+			// Validate in real-time
+			validatePhoneInput(phone);
 		}
 
 		// Update country when phone country changes
 		if (data?.country?.iso2) {
-			const newCountryIso = data.country.iso2.toLowerCase(); // Ensure lowercase
-
-			// Only update if country has changed
+			const newCountryIso = data.country.iso2.toLowerCase();
 			if (newCountryIso !== countryIso) {
 				setCountryIso(newCountryIso);
 			}
 		}
 	};
 
-	// Effect to ensure country code is reset when phone is cleared
+	// Update form data when phone changes - use exact backend formatting
 	useEffect(() => {
-		// If user completely clears the input, reset it to empty string
-		// so that the defaultCountry takes effect again
-		if (phoneValue === "") {
-			// Force re-render with default country
-			setPhoneValue("");
+		// Use EXACT backend formatting logic
+		const formattedPhone = formatPhoneNumberVN(phoneValue);
+		
+		// Only update if we have a valid formatted phone
+		// This ensures backend will receive exactly what it expects
+		if (formattedPhone !== null) {
+			setFormData((prev) => ({
+				...prev,
+				phone: formattedPhone,
+			}));
+		} else {
+			// Keep original value for invalid phones to show validation error
+			setFormData((prev) => ({
+				...prev,
+				phone: phoneValue,
+			}));
 		}
 	}, [phoneValue]);
 
-	// Update form data when phone changes
-	useEffect(() => {
-		setFormData((prev) => ({
-			...prev,
-			phone: phoneValue,
-		}));
-
-		// Validate phone
-		setIsPhoneValid(validatePhone(phoneValue));
-	}, [phoneValue, validatePhone]);
+	// Handle phone input blur for validation feedback
+	const handlePhoneBlur = () => {
+		if (phoneValue) {
+			validatePhoneInput(phoneValue);
+		}
+	};
 
 	// Add handler for backdrop click
 	const handleBackdropClick = (e: React.MouseEvent) => {
-		// If click is on backdrop (not on modal content)
 		if (modalRef.current && !modalRef.current.contains(e.target as Node)) {
 			setIsModalOpen(false);
 		}
@@ -247,12 +219,10 @@ const WarrantyForm = () => {
 			return { isValid: false, message: "Mã đơn hàng là bắt buộc" };
 		}
 
-		// Remove any spaces from the code
 		const trimmedCode = code.trim();
 
 		switch (platform) {
 			case "shopee":
-				// Shopee: 14 characters, alphanumeric
 				const shopeeRegex = /^[a-zA-Z0-9]{14}$/;
 				if (!shopeeRegex.test(trimmedCode)) {
 					return {
@@ -263,7 +233,6 @@ const WarrantyForm = () => {
 				break;
 
 			case "tiktok":
-				// TikTok: 18 characters, numbers only
 				const tiktokRegex = /^[0-9]{18}$/;
 				if (!tiktokRegex.test(trimmedCode)) {
 					return {
@@ -274,7 +243,6 @@ const WarrantyForm = () => {
 				break;
 
 			case "lazada":
-				// Lazada: 15 characters, numbers only
 				const lazadaRegex = /^[0-9]{15}$/;
 				if (!lazadaRegex.test(trimmedCode)) {
 					return {
@@ -323,7 +291,6 @@ const WarrantyForm = () => {
 
 		// Real-time validation for order code as user types
 		if (name === "order_code" && value) {
-			// Only check format when user has typed enough characters
 			if (
 				(formData.purchase_platform === "shopee" && value.length >= 14) ||
 				(formData.purchase_platform === "tiktok" && value.length >= 18) ||
@@ -347,7 +314,6 @@ const WarrantyForm = () => {
 		}));
 		setIsDropdownOpen(false);
 
-		// Update active tab in modal to match selected platform
 		setActiveTab(platform as "shopee" | "tiktok" | "lazada");
 
 		// Re-validate order code if there's one entered already
@@ -372,10 +338,11 @@ const WarrantyForm = () => {
 			return false;
 		}
 
-		if (!isPhoneValid) {
+		// Use our custom phone validation
+		if (!isPhoneValid || phoneError) {
 			toast({
 				title: "Lỗi xác thực",
-				description: "Vui lòng nhập số điện thoại hợp lệ",
+				description: phoneError || "Vui lòng nhập số điện thoại hợp lệ",
 				variant: "destructive",
 			});
 			return false;
@@ -434,24 +401,9 @@ const WarrantyForm = () => {
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
 
-		const currentPhoneValid = validatePhone(phoneValue);
-		setIsPhoneValid(currentPhoneValid);
-
-		// Use the current value, not the state which might be stale
-		if (
-			!formData.name ||
-			!currentPhoneValid ||
-			!formData.order_code ||
-			!captchaValue
-		) {
-			toast({
-				title: "Lỗi xác thực",
-				description: "Vui lòng điền đầy đủ thông tin bắt buộc",
-				variant: "destructive",
-			});
-			return;
-		}
-
+		// Final validation before submit
+		const currentPhoneValid = validatePhoneInput(phoneValue);
+		
 		if (!validateForm()) {
 			return;
 		}
@@ -465,7 +417,13 @@ const WarrantyForm = () => {
 				captchaToken: captchaValue,
 			};
 
-			// Replace with your actual API endpoint
+			// Debug log for development
+			if (process.env.NODE_ENV === 'development') {
+				console.log('📤 Submitting warranty data:', payloadWithCaptcha);
+				console.log('📱 Final phone format being sent:', formData.phone);
+			}
+
+			// API call to our Next.js API route (which forwards to backend)
 			const response = await fetch("/api/warranty", {
 				method: "POST",
 				headers: {
@@ -476,28 +434,23 @@ const WarrantyForm = () => {
 
 			const responseData = await response.json();
 
-			// Kiểm tra kết quả trả về từ API
+			// Handle API response
 			if (!responseData.success) {
-				// Check if the order is already registered for warranty
 				if (responseData.already_registered) {
 					toast({
 						title: "Thông báo",
-						description:
-							responseData.message ||
-							"Mã đơn hàng này đã được đăng ký bảo hành trước đó.",
+						description: responseData.message || "Mã đơn hàng này đã được đăng ký bảo hành trước đó.",
 						variant: "destructive",
 					});
 				} else {
-					// Hiển thị thông báo lỗi chung cho tất cả các lỗi khác
 					toast({
 						title: "Lỗi",
-						description:
-							responseData.message || "Không thể gửi biểu mẫu bảo hành",
+						description: responseData.message || "Không thể gửi biểu mẫu bảo hành",
 						variant: "destructive",
 					});
 				}
 
-				// Reset captcha khi có lỗi
+				// Reset captcha on error
 				if (recaptchaRef.current) {
 					recaptchaRef.current.reset();
 				}
@@ -505,17 +458,20 @@ const WarrantyForm = () => {
 				return;
 			}
 
-			// Xử lý thành công
+			// Success handling
 			toast({
 				title: "Thành công!",
-				description:
-					responseData.message ||
-					"Thông tin bảo hành của bạn đã được gửi thành công!",
+				description: responseData.message || "Thông tin bảo hành của bạn đã được gửi thành công!",
 			});
 
 			// Redirect to success page
 			window.location.href = "/warranty/success";
 		} catch (error) {
+			// Debug log for development
+			if (process.env.NODE_ENV === 'development') {
+				console.error('❌ Warranty submission error:', error);
+			}
+			
 			toast({
 				title: "Lỗi",
 				description: `Không thể gửi biểu mẫu bảo hành: ${error instanceof Error ? error.message : "Lỗi không xác định"}`,
@@ -543,11 +499,9 @@ const WarrantyForm = () => {
 	// Handler for opening the guide modal
 	const openGuideModal = () => {
 		setIsModalOpen(true);
-		// Set active tab to match the currently selected purchase platform
 		setActiveTab(formData.purchase_platform as "shopee" | "tiktok" | "lazada");
-		setCurrentStep(0); // Reset to first step whenever opened
+		setCurrentStep(0);
 
-		// Preload images for the current platform
 		const currentSteps = getCurrentSteps();
 		preloadImages(currentSteps);
 	};
@@ -584,15 +538,15 @@ const WarrantyForm = () => {
 	// Switch between tabs
 	const handleTabChange = (tab: "shopee" | "tiktok" | "lazada") => {
 		setActiveTab(tab);
-		setCurrentStep(0); // Reset step when changing tabs
+		setCurrentStep(0);
 	};
 
-	// Thêm hàm để điều hướng các hình ảnh trong chế độ toàn màn hình
+	// Navigation functions for fullscreen images
 	const navigateFullscreenImage = (
 		direction: "next" | "prev",
 		e?: React.MouseEvent,
 	) => {
-		e?.stopPropagation(); // Ngăn chặn sự kiện click lan tỏa và đóng modal
+		e?.stopPropagation();
 
 		if (fullscreenImageIndex === null) return;
 
@@ -608,12 +562,10 @@ const WarrantyForm = () => {
 		setFullscreenImageIndex(newIndex);
 	};
 
-	// Hàm mở chế độ xem toàn màn hình - lưu index thay vì URL
 	const openFullscreenImage = (index: number) => {
 		setFullscreenImageIndex(index);
 	};
 
-	// Đóng chế độ xem toàn màn hình
 	const closeFullscreenImage = () => {
 		setFullscreenImageIndex(null);
 	};
@@ -631,11 +583,10 @@ const WarrantyForm = () => {
 			<div className="w-full max-w-4xl">
 				{/* Desktop Layout: Side by side with equal heights */}
 				<div className="flex flex-col lg:flex-row items-stretch gap-8">
-					{/* Logo and Branding Column - Modified for equal height */}
+					{/* Logo and Branding Column */}
 					<div className="w-full lg:w-1/3 flex flex-col items-start justify-between bg-white/80 rounded-lg shadow-sm mb-6 lg:mb-0 p-4 lg:p-6">
 						<div className="w-full">
 							<div className="w-full flex justify-center lg:justify-start mb-6">
-								{/* REPLACED: img with Next.js Image component */}
 								<Image
 									src="/logo.png"
 									alt="LUG.vn Logo"
@@ -669,15 +620,13 @@ const WarrantyForm = () => {
 						</div>
 					</div>
 
-					{/* Form Column - Using h-full for equal height */}
+					{/* Form Column */}
 					<div className="w-full lg:w-2/3 h-full flex">
 						<Card className="w-full shadow-xl border-0 flex flex-col">
 							<CardHeader className="space-y-1 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-t-lg flex-shrink-0">
-								{/* Show this title only on mobile, on desktop it appears in the left column */}
 								<CardTitle className="text-2xl font-bold text-center lg:hidden">
 									Đăng Ký Bảo Hành
 								</CardTitle>
-								{/* On desktop, show a simpler header */}
 								<CardTitle className="text-xl font-bold text-center hidden lg:block">
 									Thông Tin Đăng Ký
 								</CardTitle>
@@ -704,7 +653,7 @@ const WarrantyForm = () => {
 										/>
 									</div>
 
-									{/* Phone Field */}
+									{/* Phone Field - Improved with backend-compatible validation */}
 									<div>
 										<label
 											htmlFor="phone"
@@ -717,56 +666,53 @@ const WarrantyForm = () => {
 												defaultCountry="vn"
 												value={phoneValue}
 												onChange={handlePhoneChange}
-												inputClassName="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+												onBlur={handlePhoneBlur}
+												inputClassName={`w-full px-4 py-3 rounded-lg border ${
+													phoneError 
+														? "border-red-500 focus:ring-red-500" 
+														: "border-gray-300 focus:ring-red-500"
+												} focus:outline-none focus:ring-2 focus:border-transparent`}
 												countrySelectorStyleProps={{
-													buttonClassName:
-														"border border-gray-300 border-r-0 rounded-l-lg bg-white px-2 h-12",
+													buttonClassName: `border ${
+														phoneError ? "border-red-500" : "border-gray-300"
+													} border-r-0 rounded-l-lg bg-white px-2 h-12`,
 													dropdownStyleProps: {
-														className:
-															"absolute mt-1 z-10 bg-white border border-gray-300 rounded-lg shadow-lg",
-														listItemClassName:
-															"px-3 py-2 hover:bg-gray-100 cursor-pointer",
+														className: "absolute mt-1 z-10 bg-white border border-gray-300 rounded-lg shadow-lg",
+														listItemClassName: "px-3 py-2 hover:bg-gray-100 cursor-pointer",
 													},
 												}}
 												forceDialCode={true}
 												disableDialCodeAndPrefix={false}
 											/>
 											<style jsx global>{`
-                        /* Synchronized focus states for phone input */
-                        .phone-input-wrapper {
-                          position: relative;
-                        }
-
-                        .phone-input-wrapper
-                          .react-international-phone-input-container {
-                          display: flex;
-                        }
-
-                        .phone-input-wrapper
-                          .react-international-phone-country-selector-button {
-                          transition: all 0.2s ease-in-out;
-                        }
-
-                        .phone-input-wrapper
-                          .react-international-phone-input:focus
-                          + .react-international-phone-country-selector-button,
-                        .phone-input-wrapper
-                          .react-international-phone-input:focus-within
-                          + .react-international-phone-country-selector-button {
-                          border-color: rgb(239, 68, 68) !important;
-                          box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.3);
-                        }
-
-                        .phone-input-wrapper
-                          .react-international-phone-input:focus {
-                          z-index: 1;
-                        }
-                      `}</style>
+												.phone-input-wrapper {
+													position: relative;
+												}
+												.phone-input-wrapper .react-international-phone-input-container {
+													display: flex;
+												}
+												.phone-input-wrapper .react-international-phone-country-selector-button {
+													transition: all 0.2s ease-in-out;
+												}
+												.phone-input-wrapper .react-international-phone-input:focus + .react-international-phone-country-selector-button,
+												.phone-input-wrapper .react-international-phone-input:focus-within + .react-international-phone-country-selector-button {
+													border-color: rgb(239, 68, 68) !important;
+													box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.3);
+												}
+												.phone-input-wrapper .react-international-phone-input:focus {
+													z-index: 1;
+												}
+											`}</style>
 										</div>
-										{phoneValue && !isPhoneValid && (
-											<p className="text-red-500 text-xs mt-1">
-												Vui lòng nhập số điện thoại hợp lệ
-											</p>
+										{phoneError && (
+										<p className="text-red-500 text-xs mt-1">
+										{phoneError}
+										</p>
+										)}
+										{phoneValue && isPhoneValid && (
+										<p className="text-green-600 text-xs mt-1">
+										✓ Số điện thoại hợp lệ
+										</p>
 										)}
 									</div>
 
@@ -898,7 +844,7 @@ const WarrantyForm = () => {
 										<Button
 											type="submit"
 											className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg transition duration-200 ease-in-out"
-											disabled={loading || !captchaValue}
+											disabled={loading || !captchaValue || !isPhoneValid}
 										>
 											{loading ? "Đang gửi..." : "Gửi đăng ký"}
 										</Button>
@@ -912,7 +858,6 @@ const WarrantyForm = () => {
 
 			{/* Modal for Order Code Guide */}
 			{isModalOpen && (
-				// biome-ignore lint/a11y/useKeyWithClickEvents: <explanation>
 				<div
 					className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
 					onClick={handleBackdropClick}
@@ -973,10 +918,8 @@ const WarrantyForm = () => {
 						{/* Carousel */}
 						<div className="p-4">
 							<div className="relative">
-								{/* Carousel Content */}
 								<div className="overflow-hidden relative">
 									<div className="flex flex-col items-center justify-center">
-										{/* Navigation Buttons (now positioned on the sides of the image) */}
 										<button
 											type="button"
 											onClick={goToPrevSlide}
@@ -990,7 +933,6 @@ const WarrantyForm = () => {
 											className="cursor-zoom-in relative w-full h-64 mb-4"
 											onClick={() => openFullscreenImage(currentStep)}
 										>
-											{/* REPLACED: img with Next.js Image component */}
 											<Image
 												src={getCurrentSteps()[currentStep].imagePath}
 												alt="Hướng dẫn"
@@ -1001,7 +943,6 @@ const WarrantyForm = () => {
 												<ZoomIn size={16} className="text-gray-700" />
 											</div>
 
-											{/* Highlight areas if defined */}
 											{getCurrentSteps()[currentStep].highlightAreas?.map(
 												(area, idx) => (
 													<div
@@ -1027,9 +968,6 @@ const WarrantyForm = () => {
 											<ChevronRight size={20} />
 										</button>
 
-										{/* Removed title and description since they're already in the images */}
-
-										{/* Display additional notes if available */}
 										{getCurrentSteps()[currentStep].notes && (
 											<p className="text-xs italic text-gray-500 mt-2 text-center">
 												{getCurrentSteps()[currentStep].notes}
@@ -1062,7 +1000,6 @@ const WarrantyForm = () => {
 					onClick={closeFullscreenImage}
 				>
 					<div className="relative max-w-4xl max-h-screen">
-						{/* Navigation buttons */}
 						<button
 							className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white bg-opacity-50 hover:bg-opacity-70 rounded-full p-2 z-10"
 							onClick={(e) => navigateFullscreenImage("prev", e)}
@@ -1079,7 +1016,6 @@ const WarrantyForm = () => {
 							<ChevronRight size={24} />
 						</button>
 
-						{/* Image container */}
 						<div className="relative w-[800px] h-[600px]">
 							<Image
 								src={getCurrentSteps()[fullscreenImageIndex].imagePath}
@@ -1090,7 +1026,6 @@ const WarrantyForm = () => {
 							/>
 						</div>
 
-						{/* Close button */}
 						<button
 							className="absolute top-2 right-2 bg-white rounded-full p-1"
 							onClick={(e) => {
@@ -1101,7 +1036,6 @@ const WarrantyForm = () => {
 							<X size={24} />
 						</button>
 
-						{/* Step indicator */}
 						<div className="absolute bottom-4 left-0 right-0 flex justify-center gap-2">
 							{getCurrentSteps().map((_, index) => (
 								<div
