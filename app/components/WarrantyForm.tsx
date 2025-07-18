@@ -402,7 +402,7 @@ const WarrantyForm = () => {
 		e.preventDefault();
 
 		// Final validation before submit
-		const currentPhoneValid = validatePhoneInput(phoneValue);
+		validatePhoneInput(phoneValue);
 		
 		if (!validateForm()) {
 			return;
