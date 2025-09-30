@@ -17,8 +17,8 @@ app.prepare().then(() => {
 	createServer(httpsOptions, (req, res) => {
 		const parsedUrl = parse(req.url || "", true);
 		handle(req, res, parsedUrl);
-	}).listen(443, (err) => {
+	}).listen(3000, (err) => {
 		if (err) throw err;
-		console.log("> Ready on https://dl.lug.center");
+		console.log("> Ready on https://dl.lug.center:3000");
 	});
 });
