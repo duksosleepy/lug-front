@@ -37,6 +37,10 @@ export default function SapoSyncPage() {
 	const [showEndCalendar, setShowEndCalendar] = useState(false);
 	const [calendarMonth, setCalendarMonth] = useState(new Date(2025, 0));
 	const [endCalendarMonth, setEndCalendarMonth] = useState(new Date());
+	const [showMonthPicker, setShowMonthPicker] = useState(false);
+	const [showEndMonthPicker, setShowEndMonthPicker] = useState(false);
+	const [showYearPicker, setShowYearPicker] = useState(false);
+	const [showEndYearPicker, setShowEndYearPicker] = useState(false);
 
 	// Refs for outside click detection
 	const startCalendarRef = useRef<HTMLDivElement>(null);
@@ -277,6 +281,45 @@ export default function SapoSyncPage() {
 	}: CustomCalendarProps) => {
 		const days = generateCalendarDays(currentMonth);
 		const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+		const months = [
+			"January", "February", "March", "April", "May", "June",
+			"July", "August", "September", "October", "November", "December"
+		];
+		const showPicker = isEndDate ? showEndMonthPicker : showMonthPicker;
+		const setShowPicker = isEndDate ? setShowEndMonthPicker : setShowMonthPicker;
+		const showYearPickerState = isEndDate ? showEndYearPicker : showYearPicker;
+		const setShowYearPickerState = isEndDate ? setShowEndYearPicker : setShowYearPicker;
+
+		const currentYear = currentMonth.getFullYear();
+		const years = Array.from({ length: 12 }, (_, i) => currentYear - 5 + i);
+
+		const handleMonthSelect = (monthIndex: number) => {
+			if (isEndDate) {
+				setEndCalendarMonth(new Date(currentMonth.getFullYear(), monthIndex));
+			} else {
+				setCalendarMonth(new Date(currentMonth.getFullYear(), monthIndex));
+			}
+			setShowPicker(false);
+		};
+
+		const handleYearSelect = (year: number) => {
+			if (isEndDate) {
+				setEndCalendarMonth(new Date(year, currentMonth.getMonth()));
+			} else {
+				setCalendarMonth(new Date(year, currentMonth.getMonth()));
+			}
+			setShowYearPickerState(false);
+		};
+
+		const toggleMonthPicker = () => {
+			setShowPicker(!showPicker);
+			setShowYearPickerState(false);
+		};
+
+		const toggleYearPicker = () => {
+			setShowYearPickerState(!showYearPickerState);
+			setShowPicker(false);
+		};
 
 		return (
 			<div
@@ -292,11 +335,64 @@ export default function SapoSyncPage() {
 						<ChevronLeft size={20} />
 					</button>
 
-					<div className="inline-flex items-center border border-gray-700 rounded px-2 py-1">
-						<span className="text-sm font-medium">
-							{format(currentMonth, "MMMM yyyy")}
-						</span>
-						<ChevronRight size={16} className="ml-1 text-gray-500" />
+					<div className="flex items-center gap-1">
+						<div className="relative">
+							<button
+								onClick={toggleMonthPicker}
+								className="border border-gray-700 rounded px-2 py-1 hover:bg-gray-800 focus:outline-none"
+							>
+								<span className="text-sm font-medium">
+									{format(currentMonth, "MMMM")}
+								</span>
+							</button>
+
+							{showPicker && (
+								<div className="absolute top-full mt-1 left-1/2 transform -translate-x-1/2 bg-gray-800 border border-gray-700 rounded-lg shadow-lg p-3 w-48 z-20">
+									<div className="grid grid-cols-3 gap-2">
+										{months.map((month, index) => (
+											<button
+												key={month}
+												onClick={() => handleMonthSelect(index)}
+												className={`text-xs px-2 py-2 rounded hover:bg-gray-700 focus:outline-none ${
+													index === currentMonth.getMonth() ? 'bg-blue-600 text-white' : 'text-gray-300'
+												}`}
+											>
+												{month.slice(0, 3)}
+											</button>
+										))}
+									</div>
+								</div>
+							)}
+						</div>
+
+						<div className="relative">
+							<button
+								onClick={toggleYearPicker}
+								className="border border-gray-700 rounded px-2 py-1 hover:bg-gray-800 focus:outline-none"
+							>
+								<span className="text-sm font-medium">
+									{format(currentMonth, "yyyy")}
+								</span>
+							</button>
+
+							{showYearPickerState && (
+								<div className="absolute top-full mt-1 left-1/2 transform -translate-x-1/2 bg-gray-800 border border-gray-700 rounded-lg shadow-lg p-3 w-40 z-20 max-h-64 overflow-y-auto">
+									<div className="grid grid-cols-2 gap-2">
+										{years.map((year) => (
+											<button
+												key={year}
+												onClick={() => handleYearSelect(year)}
+												className={`text-sm px-2 py-2 rounded hover:bg-gray-700 focus:outline-none ${
+													year === currentMonth.getFullYear() ? 'bg-blue-600 text-white' : 'text-gray-300'
+												}`}
+											>
+												{year}
+											</button>
+										))}
+									</div>
+								</div>
+							)}
+						</div>
 					</div>
 
 					<button
