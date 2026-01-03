@@ -1,59 +1,5 @@
 import type { Config } from "tailwindcss";
 
-// Import only the colors we need, avoiding deprecated color names
-import {
-	slate,
-	gray,
-	zinc,
-	neutral,
-	stone,
-	red,
-	amber,
-	yellow,
-	lime,
-	green,
-	emerald,
-	teal,
-	cyan,
-	sky,
-	blue,
-	indigo,
-	violet,
-	purple,
-	fuchsia,
-	pink,
-	rose,
-	white,
-	black,
-} from "tailwindcss/colors";
-
-// Create a clean colors object without deprecated colors
-const colors = {
-	slate,
-	gray,
-	zinc,
-	neutral,
-	stone,
-	red,
-	amber,
-	yellow,
-	lime,
-	green,
-	emerald,
-	teal,
-	cyan,
-	sky, // formerly lightBlue
-	blue,
-	indigo,
-	violet,
-	purple,
-	fuchsia,
-	pink,
-	rose,
-	white,
-	black,
-};
-
 const config = {
 	darkMode: ["class"],
 	content: [
@@ -73,7 +19,6 @@ const config = {
 		},
 		extend: {
 			colors: {
-				...colors,
 				border: "hsl(var(--border))",
 				input: "hsl(var(--input))",
 				ring: "hsl(var(--ring))",

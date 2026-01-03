@@ -590,9 +590,9 @@ const WarrantyForm = () => {
 								<Image
 									src="/logo.png"
 									alt="LUG.vn Logo"
-									width={160}
-									height={48}
-									className="h-auto"
+									width={260}
+									height={86}
+									className="w-auto h-auto max-w-[260px]"
 									priority
 								/>
 							</div>
