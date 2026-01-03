@@ -159,7 +159,7 @@ export default function LoginPage() {
 			>
 				<div className="bg-white bg-opacity-95 backdrop-blur-sm rounded-lg shadow-2xl overflow-hidden">
 					{/* Header */}
-					<div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-6 py-8 text-white text-center">
+					<div className="bg-linear-to-r from-blue-600 to-indigo-700 px-6 py-8 text-white text-center">
 						<motion.div
 							initial={{ scale: 0.8 }}
 							animate={{ scale: 1 }}

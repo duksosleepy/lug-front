@@ -78,7 +78,7 @@ export default function AccountLockoutPage() {
 	};
 
 	return (
-		<div className="min-h-screen bg-gradient-to-br from-red-50 to-blue-50 flex items-center justify-center p-4">
+		<div className="min-h-screen bg-linear-to-br from-red-50 to-blue-50 flex items-center justify-center p-4">
 			<motion.div
 				initial={{ opacity: 0, y: -20 }}
 				animate={{ opacity: 1, y: 0 }}
@@ -87,7 +87,7 @@ export default function AccountLockoutPage() {
 			>
 				<div className="bg-white bg-opacity-95 backdrop-blur-sm rounded-lg shadow-xl overflow-hidden">
 					{/* Header */}
-					<div className="bg-gradient-to-r from-red-600 to-red-800 px-6 py-8 text-white text-center">
+					<div className="bg-linear-to-r from-red-600 to-red-800 px-6 py-8 text-white text-center">
 						<motion.div
 							initial={{ scale: 0.8 }}
 							animate={{ scale: 1 }}

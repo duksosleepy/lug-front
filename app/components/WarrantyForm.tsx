@@ -579,7 +579,7 @@ const WarrantyForm = () => {
 	};
 
 	return (
-		<div className="min-h-screen bg-gradient-to-b from-slate-100 to-blue-50 flex items-center justify-center p-4">
+		<div className="min-h-screen bg-linear-to-b from-slate-100 to-blue-50 flex items-center justify-center p-4">
 			<div className="w-full max-w-4xl">
 				{/* Desktop Layout: Side by side with equal heights */}
 				<div className="flex flex-col lg:flex-row items-stretch gap-8">
@@ -608,7 +608,7 @@ const WarrantyForm = () => {
 								</p>
 							</div>
 						</div>
-						<div className="w-full bg-gradient-to-r from-blue-50 to-red-50 p-5 rounded-lg border border-blue-100 mt-4">
+						<div className="w-full bg-linear-to-r from-blue-50 to-red-50 p-5 rounded-lg border border-blue-100 mt-4">
 							<h3 className="font-semibold text-red-600 mb-3 text-center lg:text-left">
 								Lợi ích khi đăng ký bảo hành:
 							</h3>
@@ -623,7 +623,7 @@ const WarrantyForm = () => {
 					{/* Form Column */}
 					<div className="w-full lg:w-2/3 h-full flex">
 						<Card className="w-full shadow-xl border-0 flex flex-col">
-							<CardHeader className="space-y-1 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-t-lg flex-shrink-0">
+							<CardHeader className="space-y-1 bg-linear-to-r from-red-500 to-red-600 text-white rounded-t-lg flex-shrink-0">
 								<CardTitle className="text-2xl font-bold text-center lg:hidden">
 									Đăng Ký Bảo Hành
 								</CardTitle>
