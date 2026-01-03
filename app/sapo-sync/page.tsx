@@ -21,12 +21,12 @@ export default function SapoSyncPage() {
 	};
 
 	// Initialize with default values
-	const [startDate, setStartDate] = useState("2025-01-01");
+	const [startDate, setStartDate] = useState("2026-01-01");
 	const [endDate, setEndDate] = useState(
 		new Date().toISOString().split("T")[0],
 	);
 	const [startDateDisplay, setStartDateDisplay] = useState(
-		formatDisplayDate("2025-01-01"),
+		formatDisplayDate("2026-01-01"),
 	);
 	const [endDateDisplay, setEndDateDisplay] = useState(
 		formatDisplayDate(new Date()), // Now works correctly with Date object
@@ -35,7 +35,7 @@ export default function SapoSyncPage() {
 	// Calendar popup state
 	const [showStartCalendar, setShowStartCalendar] = useState(false);
 	const [showEndCalendar, setShowEndCalendar] = useState(false);
-	const [calendarMonth, setCalendarMonth] = useState(new Date(2025, 0));
+	const [calendarMonth, setCalendarMonth] = useState(new Date(2026, 0));
 	const [endCalendarMonth, setEndCalendarMonth] = useState(new Date());
 	const [showMonthPicker, setShowMonthPicker] = useState(false);
 	const [showEndMonthPicker, setShowEndMonthPicker] = useState(false);
