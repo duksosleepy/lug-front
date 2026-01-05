@@ -587,13 +587,13 @@ const WarrantyForm = () => {
 					<div className="w-full lg:w-1/3 flex flex-col items-start justify-between bg-white/80 rounded-lg shadow-sm mb-6 lg:mb-0 p-4 lg:p-6">
 						<div className="w-full">
 							<div className="w-full flex justify-center lg:justify-start mb-6">
-								<Image
+								{/* eslint-disable-next-line @next/next/no-img-element */}
+								<img
 									src="/logo.png"
 									alt="LUG.vn Logo"
 									width={260}
 									height={86}
 									className="w-auto h-auto max-w-[260px]"
-									priority
 								/>
 							</div>
 							<div className="w-full text-gray-700">
