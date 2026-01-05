@@ -29,6 +29,16 @@ const nextConfig: NextConfig = {
 			},
 		];
 	},
+	images: {
+		remotePatterns: [
+			{
+				protocol: "https",
+				hostname: "dl.lug.center",
+			},
+		],
+		formats: ["image/avif", "image/webp"],
+		minimumCacheTTL: 60,
+	},
 	experimental: {
 		proxyTimeout: 300000, // 5 minutes in milliseconds
 	},
