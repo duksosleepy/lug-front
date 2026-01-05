@@ -4,7 +4,7 @@ import type { NextRequest } from "next/server";
 // Paths that don't require authentication
 const publicPaths = ["/login", "/warranty", "/warranty/success"];
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
 	// Check if the path is in public paths
 	const isPublicPath = publicPaths.some(
 		(path) =>
@@ -43,7 +43,7 @@ export function middleware(request: NextRequest) {
 	return NextResponse.next();
 }
 
-// Configure paths that trigger the middleware
+// Configure paths that trigger the proxy
 export const config = {
 	matcher: ["/((?!api|_next/static|_next/image|favicon.ico|.*\\.png$).*)"],
 };
