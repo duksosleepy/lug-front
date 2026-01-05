@@ -132,7 +132,7 @@ export default function LoginPage() {
 			backgroundPosition: "100% 100%",
 			transition: {
 				duration: 20,
-				ease: "linear",
+				ease: "linear" as const,
 				repeat: Number.POSITIVE_INFINITY,
 				repeatType: "reverse" as const,
 			},
