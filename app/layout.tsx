@@ -6,7 +6,7 @@ import AppWrapper from "@/app/components/AppWrapper";
 const inter = Inter({ subsets: ["latin"] });
 import { Suspense } from "react";
 export const metadata: Metadata = {
-	metadataBase: new URL("http://dl.lug.info.vn/warranty"),
+	metadataBase: new URL(process.env.NEXT_PUBLIC_BASE_URL || "https://dl.lug.center"),
 	title: "LUG.vn Bảo Hành",
 	description: "Trang chủ bảo hành",
 	openGraph: {
@@ -20,7 +20,7 @@ export const metadata: Metadata = {
 				alt: "LUG.vn",
 			},
 		],
-		url: "http://dl.lug.info.vn/warranty",
+		url: process.env.NEXT_PUBLIC_BASE_URL || "https://dl.lug.center",
 		type: "website",
 	},
 	icons: { icon: "/favicon.ico" },
